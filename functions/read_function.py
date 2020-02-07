@@ -204,9 +204,13 @@ class inDrop_Data_processing:
         csvfile.close()
     def correct_and_filter(self):
         Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
-        for sample in self.libraryindex:
+        for sample in self.libraryindex.keys():
             filtering_output_directory='%s/%s'%(self.outputdir,sample)
-            os.mkdir(filtering_output_directory)
+            try:
+                os.mkdir(filtering_output_directory)
+            except FileExistsError:
+                # directory already exists
+                pass
             filtering_statistics={
             'Total_read':0,
             'Valid_read':0,
@@ -230,12 +234,11 @@ class inDrop_Data_processing:
                 umi=CB2read[8:]
                 if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
                     writeCB1=Barcode_correction_dict[CB1read]
-                    writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])+umi
+                    writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
                     writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
                     truecellname=writeCB1+writeCB2
                     if truecellname in Cell_statistics:
                         if umi not in Cell_statistics[truecellname][0]:
-                            Cell_statistics[truecellname]=[[],0,0]
                             Cell_statistics[truecellname][0].append(umi)
                             Cell_statistics[truecellname][1]+=1
                             Cell_statistics[truecellname][2]+=1
@@ -248,7 +251,7 @@ class inDrop_Data_processing:
                         Cell_statistics[truecellname][2]+=1
                     filtering_statistics['Valid_read']+=1
                     self._write_fastq(writename,'R1',CB1,writeCB1,CB1_qual)#ID,file_index,file,seq,quality_score
-                    self._write_fastq(writename,'R1',CB2,writeCB2,CB2_qual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',CB2,writeCB2+umi,CB2_qual)#ID,file_index,file,seq,quality_score
                     self._write_fastq(writename,'R1',RNA_read,rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
                 else:
                     if CB1read not in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) not in Barcode_correction_dict:
@@ -266,17 +269,17 @@ class inDrop_Data_processing:
             os.system('gzip %s'%('%s/%s_filtered_Reads.fastq'%(filtering_output_directory,sample)))
             for cell in Cell_statistics:
                 Cell_statistics[cell][0]=0
-            with open('%s/filtering_statistics.tsv'%(filtering_output_directory), "w", newline="") as csvfile:
+            with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
                 writer=csv.writer(csvfile,delimiter='\t')
                 writer.writerow(['Category','Read Number','Percentage'])
-                for category in filtering_statistics:
+                for category in filtering_statistics.keys():
                     writer.writerow([category,filtering_statistics[category],filtering_statistics[category]/filtering_statistics['Total_read']])
             csvfile.close()
-            with open('%s/Cell_statistics.tsv'%(filtering_output_directory), "w", newline="") as csvfile:
+            with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
                 writer=csv.writer(csvfile,delimiter='\t')
                 writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
-                for cell in Cell_statistics:
-                    writer.writerow([cell,Cell_statistics[cell][1],fCell_statistics[cell][2]])
+                for cell in Cell_statistics.keys():
+                    writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
             csvfile.close()            
 
 
