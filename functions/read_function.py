@@ -272,8 +272,11 @@ class inDrop_Data_processing:
             with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
                 writer=csv.writer(csvfile,delimiter='\t')
                 writer.writerow(['Category','Read Number','Percentage'])
-                for category in filtering_statistics.keys():
-                    writer.writerow([category,filtering_statistics[category],filtering_statistics[category]/filtering_statistics['Total_read']])
+                writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
+                writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
             csvfile.close()
             with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
                 writer=csv.writer(csvfile,delimiter='\t')
