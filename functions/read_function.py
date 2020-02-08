@@ -4,7 +4,7 @@ import subprocess
 import sys
 from collections import defaultdict, OrderedDict
 from itertools import product, combinations
-
+import gzip
 
 
 
@@ -97,6 +97,7 @@ class inDrop_Data_processing:
     def __init__(self,pathtolibraryindex,pathtocellbarcode1,pathtocellbarcode2umi,pathtorna,libraryindex,outputdir):
         try:
             if type(libraryindex) is dict:
+
                 self.pathtolibraryindex=pathtolibraryindex
                 self.pathtocellbarcode1=pathtocellbarcode1
                 self.pathtocellbarcode2umi=pathtocellbarcode2umi
@@ -115,7 +116,8 @@ class inDrop_Data_processing:
                     self.unfiltered_file_location[sample]={'RNA':'%s/%s_read.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),
                                                 'CB1':'%s/%s_barcode1.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),
                                                 'CB2':'%s/%s_barcode2.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample]))}
-
+            else:
+                sys.exit('The sample index is wrong.')
         except Exception as e:
             print(str(e))
     def _write_fastq(self,ID,file_index,file,seq,quality_score):
@@ -131,13 +133,13 @@ class inDrop_Data_processing:
             file.write('%s\n' % quality_score)
     def _ParseFastq(self,pathstofastqs):
         if pathstofastqs[0].endswith('.gz'):
-            processes=[subprocess.Popen(['zcat',fastq],stdout=subprocess.PIPE) for fastq in pathstofastqs]
+            processes=[subprocess.Popen(['zcat',(fastq)],stdout=subprocess.PIPE) for fastq in pathstofastqs]
             totalreads = [r.stdout for r in processes]
         elif pathstofastqs[0].endswith('.bz2'):
-            processes=[subprocess.Popen(['bzcat',fastq],stdout=subprocess.PIPE) for fastq in pathstofastqs]
+            processes=[subprocess.Popen(['bzcat',(fastq)],stdout=subprocess.PIPE) for fastq in pathstofastqs]
             totalreads = [r.stdout for r in processes]
         elif pathstofastqs[0].endswith('.fastq'):
-            processes=[subprocess.Popen(['cat',fastq],stdout=subprocess.PIPE) for fastq in pathstofastqs]
+            processes=[subprocess.Popen(['cat',(fastq)],stdout=subprocess.PIPE) for fastq in pathstofastqs]
             totalreads = [r.stdout for r in processes]
         else:
             sys.exit('The format of the file %s is not recognized.'%(str(pathtofastq)))
