@@ -204,7 +204,7 @@ class inDrop_Data_processing:
                 writer.writerow([sample,Read_statistics[sample],Read_statistics[sample]/Total_Read])               
             writer.writerow(['Reads not associated with any sample',Invalid_Library_Index,Invalid_Library_Index/Total_Read])
         csvfile.close()
-    def correct_and_filter(self):
+    def correct_and_filter_kallisto(self):
         Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
         for sample in self.libraryindex.keys():
             filtering_output_directory='%s/%s'%(self.outputdir,sample)
@@ -285,8 +285,87 @@ class inDrop_Data_processing:
                 writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
                 for cell in Cell_statistics.keys():
                     writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
+            csvfile.close()
+
+    def correct_and_filter_solo(self):
+        Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
+        for sample in self.libraryindex.keys():
+            filtering_output_directory='%s/%s'%(self.outputdir,sample)
+            try:
+                os.mkdir(filtering_output_directory)
+            except FileExistsError:
+                # directory already exists
+                pass
+            filtering_statistics={
+            'Total_read':0,
+            'Valid_read':0,
+            'Invalid_CB1':0,
+            'Invalid_CB2':0,
+            'Invalid_Both_CB':0
+            }
+            Cell_statistics={}#Structure: Cell_barcode:[[UMI_list],number of unique umis per cell, number of reads per cell]
+            CB=open('%s/%s_STAR_CB.fastq'%(filtering_output_directory,sample),'w+')
+            RNA_read=open('%s/%s_STAR_Reads.fastq'%(filtering_output_directory,sample),'w+')
+            for read in self._ParseFastq([self.unfiltered_file_location[sample]['CB1'],self.unfiltered_file_location[sample]['CB2'],self.unfiltered_file_location[sample]['RNA']]):
+                name=read[0].strip('\n')
+                CB1read=read[1][0].strip('\n')
+                CB2read=read[1][1].strip('\n')
+                rnaread=read[1][2].strip('\n')
+                CB1_qual=read[2][0].strip('\n')
+                CB2_qual=read[2][1].strip('\n')
+                rnaread_qual=read[2][2].strip('\n')
+                filtering_statistics['Total_read']+=1
+                umi=CB2read[8:]
+                if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
+                    writeCB1=Barcode_correction_dict[CB1read]
+                    writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    truecellname=writeCB1+writeCB2
+                    writeCB=writeCB1+writeCB2+umi
+                    writeQual=CB1_qual+CB2_qual
+                    if truecellname in Cell_statistics:
+                        if umi not in Cell_statistics[truecellname][0]:
+                            Cell_statistics[truecellname][0].append(umi)
+                            Cell_statistics[truecellname][1]+=1
+                            Cell_statistics[truecellname][2]+=1
+                        else:
+                            Cell_statistics[truecellname][2]+=1
+                    else:
+                        Cell_statistics[truecellname]=[[],0,0]
+                        Cell_statistics[truecellname][0].append(umi)
+                        Cell_statistics[truecellname][1]+=1
+                        Cell_statistics[truecellname][2]+=1
+                    filtering_statistics['Valid_read']+=1
+                    self._write_fastq(writename,'R1',CB,writeCB,writeQual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',RNA_read,rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                else:
+                    if CB1read not in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) not in Barcode_correction_dict:
+                        filtering_statistics['Invalid_Both_CB']+=1
+                    else:
+                        if CB1read not in Barcode_correction_dict:
+                            filtering_statistics['Invalid_CB1']+=1
+                        else:
+                            filtering_statistics['Invalid_CB2']+=1
+            CB.close()
+            RNA_read.close()
+            os.system('gzip %s'%('%s/%s_STAR_CB.fastq'%(filtering_output_directory,sample)))
+            os.system('gzip %s'%('%s/%s_STAR_Reads.fastq'%(filtering_output_directory,sample)))
+            for cell in Cell_statistics:
+                Cell_statistics[cell][0]=0
+            with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+                writer=csv.writer(csvfile,delimiter='\t')
+                writer.writerow(['Category','Read Number','Percentage'])
+                writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
+                writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
+            csvfile.close()
+            with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+                writer=csv.writer(csvfile,delimiter='\t')
+                writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
+                for cell in Cell_statistics.keys():
+                    writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
             csvfile.close()            
-
-
 
 
