@@ -204,7 +204,7 @@ class inDrop_Data_processing:
                 if Read_statistics[sample]!=0:
                     writer.writerow([sample,Read_statistics[sample],Read_statistics[sample]/Total_Read])
                 else:
-                    writer.writerow([sample,0,0.0)
+                    writer.writerow([sample,0,0.0])
             writer.writerow(['Reads not associated with any sample',Invalid_Library_Index,Invalid_Library_Index/Total_Read])
         csvfile.close()
     def correct_and_filter_kallisto(self):
