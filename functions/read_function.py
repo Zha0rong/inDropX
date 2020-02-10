@@ -201,7 +201,10 @@ class inDrop_Data_processing:
             writer.writerow(['Category','Read Number','Percentage'])
             writer.writerow(['Total number of Reads',Total_Read,Total_Read/Total_Read])
             for sample in Read_statistics.keys():
-                writer.writerow([sample,Read_statistics[sample],Read_statistics[sample]/Total_Read])               
+                if Read_statistics[sample]!=0:
+                    writer.writerow([sample,Read_statistics[sample],Read_statistics[sample]/Total_Read])
+                else:
+                    writer.writerow([sample,0,0.0)
             writer.writerow(['Reads not associated with any sample',Invalid_Library_Index,Invalid_Library_Index/Total_Read])
         csvfile.close()
     def correct_and_filter_kallisto(self):
@@ -271,21 +274,24 @@ class inDrop_Data_processing:
             os.system('gzip %s'%('%s/%s_filtered_Reads.fastq'%(filtering_output_directory,sample)))
             for cell in Cell_statistics:
                 Cell_statistics[cell][0]=0
-            with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
-                writer=csv.writer(csvfile,delimiter='\t')
-                writer.writerow(['Category','Read Number','Percentage'])
-                writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
-                writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
-                writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
-                writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
-                writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
-            csvfile.close()
-            with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
-                writer=csv.writer(csvfile,delimiter='\t')
-                writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
-                for cell in Cell_statistics.keys():
-                    writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
-            csvfile.close()
+            if filtering_statistics['Total_read']!=0:
+                with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+                    writer=csv.writer(csvfile,delimiter='\t')
+                    writer.writerow(['Category','Read Number','Percentage'])
+                    writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
+                    writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
+                    writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
+                    writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
+                    writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
+                csvfile.close()
+                with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+                    writer=csv.writer(csvfile,delimiter='\t')
+                    writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
+                    for cell in Cell_statistics.keys():
+                        writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
+                csvfile.close()
+            else:
+                continue
 
     def correct_and_filter_solo(self):
         Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
