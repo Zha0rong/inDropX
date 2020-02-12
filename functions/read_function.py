@@ -288,7 +288,11 @@ class inDrop_Data_processing:
                 if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
                     writeCB1=Barcode_correction_dict[CB1read]
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    writename=''
+                    if name.startswith('@'):
+                        writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    else:
+                        writename='@%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
                     truecellname=writeCB1+writeCB2
                     if truecellname in Cell_statistics:
                         if umi not in Cell_statistics[truecellname][0]:
@@ -369,7 +373,11 @@ class inDrop_Data_processing:
                 if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
                     writeCB1=Barcode_correction_dict[CB1read]
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    writename=''
+                    if name.startswith('@'):
+                        writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    else:
+                        writename='@%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
                     truecellname=writeCB1+writeCB2
                     writeCB=writeCB1+writeCB2+umi
                     writeQual=CB1_qual+CB2_qual
@@ -487,7 +495,11 @@ class inDrop_Individual_Sample_processing(inDrop_Data_processing):
                 if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
                     writeCB1=Barcode_correction_dict[CB1read]
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    writename=''
+                    if name.startswith('@'):
+                        writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    else:
+                        writename='@%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
                     truecellname=writeCB1+writeCB2
                     if truecellname in Cell_statistics:
                         if umi not in Cell_statistics[truecellname][0]:
@@ -530,7 +542,11 @@ class inDrop_Individual_Sample_processing(inDrop_Data_processing):
                 if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
                     writeCB1=Barcode_correction_dict[CB1read]
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    writename=''
+                    if name.startswith('@'):
+                        writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    else:
+                        writename='@%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
                     truecellname=writeCB1+writeCB2
                     if truecellname in Cell_statistics:
                         if umi not in Cell_statistics[truecellname][0]:
@@ -610,7 +626,11 @@ class inDrop_Individual_Sample_processing(inDrop_Data_processing):
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
                     writeCB=writeCB1+writeCB1+umi
                     writeCBqual=CB1_qual+CB2_qual
-                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    writename=''
+                    if name.startswith('@'):
+                        writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    else:
+                        writename='@%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
                     truecellname=writeCB1+writeCB2
                     if truecellname in Cell_statistics:
                         if umi not in Cell_statistics[truecellname][0]:
@@ -653,7 +673,11 @@ class inDrop_Individual_Sample_processing(inDrop_Data_processing):
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
                     writeCB=writeCB1+writeCB1+umi
                     writeCBqual=CB1_qual+CB2_qual
-                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    writename=''
+                    if name.startswith('@'):
+                        writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    else:
+                        writename='@%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
                     truecellname=writeCB1+writeCB2
                     if truecellname in Cell_statistics:
                         if umi not in Cell_statistics[truecellname][0]:
