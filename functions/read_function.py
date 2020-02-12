@@ -576,3 +576,124 @@ class inDrop_Individual_Sample_processing(inDrop_Data_processing):
             for cell in Cell_statistics.keys():
                 writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
         csvfile.close()
+
+    def Individual_sample_filter_solo(self):
+        Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
+        filtering_output_directory='%s/%s_solo'%(self.outputdir,str(list(self.libraryindex.keys())[0]))
+        try:
+            os.mkdir(filtering_output_directory)
+        except:
+            print('Nah, not a problem.')
+        filtering_statistics={
+        'Total_read':0,
+        'Valid_read':0,
+        'Invalid_CB1':0,
+        'Invalid_CB2':0,
+        'Invalid_Both_CB':0}
+        sample=str(list(self.libraryindex.keys())[0])
+        Cell_statistics={}#Structure: Cell_barcode:[[UMI_list],number of unique umis per cell, number of reads per cell]
+        CB=gzip.open('%s/%s_filtered_CB.fastq.gz'%(filtering_output_directory,sample),'wt')
+        RNA_read=gzip.open('%s/%s_filtered_Reads.fastq.gz'%(filtering_output_directory,sample),'wt')
+        if self.GEO is True:
+            for read in self._ParseGEOFastq([self.pathtocellbarcode1,self.pathtocellbarcode2umi,self.pathtorna]):
+                name=read[0].strip('\n')
+                CB1read=read[1][0].strip('\n')
+                CB2read=read[1][1].strip('\n')
+                rnaread=read[1][2].strip('\n')
+                CB1_qual=read[2][0].strip('\n')
+                CB2_qual=read[2][1].strip('\n')
+                rnaread_qual=read[2][2].strip('\n')
+                filtering_statistics['Total_read']+=1
+                umi=CB2read[8:]
+                if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
+                    writeCB1=Barcode_correction_dict[CB1read]
+                    writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+                    writeCB=writeCB1+writeCB1+umi
+                    writeCBqual=CB1_qual+CB2_qual
+                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    truecellname=writeCB1+writeCB2
+                    if truecellname in Cell_statistics:
+                        if umi not in Cell_statistics[truecellname][0]:
+                            Cell_statistics[truecellname][0].append(umi)
+                            Cell_statistics[truecellname][1]+=1
+                            Cell_statistics[truecellname][2]+=1
+                        else:
+                            Cell_statistics[truecellname][2]+=1
+                    else:
+                        Cell_statistics[truecellname]=[[],0,0]
+                        Cell_statistics[truecellname][0].append(umi)
+                        Cell_statistics[truecellname][1]+=1
+                        Cell_statistics[truecellname][2]+=1
+                    filtering_statistics['Valid_read']+=1
+                    self._write_fastq(writename,'R1',CB,writeCB,writeCBqual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',RNA_read,rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                else:
+                    if CB1read not in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) not in Barcode_correction_dict:
+                        filtering_statistics['Invalid_Both_CB']+=1
+                    else:
+                        if CB1read not in Barcode_correction_dict:
+                            filtering_statistics['Invalid_CB1']+=1
+                        else:
+                            filtering_statistics['Invalid_CB2']+=1
+            CB.close()
+            RNA_read.close()
+        else:
+            for read in self._ParseFastq([self.pathtocellbarcode1,self.pathtocellbarcode2umi,self.pathtorna]):
+                name=read[0].strip('\n')
+                CB1read=read[1][0].strip('\n')
+                CB2read=read[1][1].strip('\n')
+                rnaread=read[1][2].strip('\n')
+                CB1_qual=read[2][0].strip('\n')
+                CB2_qual=read[2][1].strip('\n')
+                rnaread_qual=read[2][2].strip('\n')
+                filtering_statistics['Total_read']+=1
+                umi=CB2read[8:]
+                if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
+                    writeCB1=Barcode_correction_dict[CB1read]
+                    writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+                    writeCB=writeCB1+writeCB1+umi
+                    writeCBqual=CB1_qual+CB2_qual
+                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    truecellname=writeCB1+writeCB2
+                    if truecellname in Cell_statistics:
+                        if umi not in Cell_statistics[truecellname][0]:
+                            Cell_statistics[truecellname][0].append(umi)
+                            Cell_statistics[truecellname][1]+=1
+                            Cell_statistics[truecellname][2]+=1
+                        else:
+                            Cell_statistics[truecellname][2]+=1
+                    else:
+                        Cell_statistics[truecellname]=[[],0,0]
+                        Cell_statistics[truecellname][0].append(umi)
+                        Cell_statistics[truecellname][1]+=1
+                        Cell_statistics[truecellname][2]+=1
+                    filtering_statistics['Valid_read']+=1
+                    self._write_fastq(writename,'R1',CB,writeCB,writeCBqual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',RNA_read,rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                else:
+                    if CB1read not in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) not in Barcode_correction_dict:
+                        filtering_statistics['Invalid_Both_CB']+=1
+                    else:
+                        if CB1read not in Barcode_correction_dict:
+                            filtering_statistics['Invalid_CB1']+=1
+                        else:
+                            filtering_statistics['Invalid_CB2']+=1
+            CB.close()
+            RNA_read.close()
+        for cell in Cell_statistics:
+            Cell_statistics[cell][0]=0
+        with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+            writer=csv.writer(csvfile,delimiter='\t')
+            writer.writerow(['Category','Read Number','Percentage'])
+            writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
+            writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
+            writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
+            writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
+            writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
+        csvfile.close()
+        with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+            writer=csv.writer(csvfile,delimiter='\t')
+            writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
+            for cell in Cell_statistics.keys():
+                writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
+        csvfile.close()
