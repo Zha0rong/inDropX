@@ -94,10 +94,10 @@ class inDrop_Data_processing:
     cellbarcodewhitelist = []
     file_location={} #Record the location of every file in every sample: CB1, CB2, Read
     unfiltered_file_location={}
+    mutli_Lane=False
     def __init__(self,pathtolibraryindex,pathtocellbarcode1,pathtocellbarcode2umi,pathtorna,libraryindex,outputdir):
         try:
             if type(libraryindex) is dict:
-
                 self.pathtolibraryindex=pathtolibraryindex
                 self.pathtocellbarcode1=pathtocellbarcode1
                 self.pathtocellbarcode2umi=pathtocellbarcode2umi
@@ -116,6 +116,8 @@ class inDrop_Data_processing:
                     self.unfiltered_file_location[sample]={'RNA':'%s/%s_read.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),
                                                 'CB1':'%s/%s_barcode1.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),
                                                 'CB2':'%s/%s_barcode2.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample]))}
+                if type(pathtolibraryindex) is list:
+                    self.mutli_Lane=True
             else:
                 sys.exit('The sample index is wrong.')
         except Exception as e:
@@ -155,62 +157,108 @@ class inDrop_Data_processing:
                 break
         for read in totalreads:
             read.close()
-    def Demultiplex(self):
+    def Demultiplex(self,strict=True):
         Total_Read=0
         Invalid_Library_Index=0
         Read_statistics={}
         #Parse fastq files into a dictionary
         readfile={}
         for sample in self.libraryindex.keys():
-            readfile[sample]=[open('%s/%s_read.fastq'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'w+'),
-                              open('%s/%s_barcode1.fastq'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'w+'),
-                              open('%s/%s_barcode2.fastq'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'w+')]
+            readfile[sample]=[gzip.open('%s/%s_read.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'wt'),
+                              gzip.open('%s/%s_barcode1.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'wt'),
+                              gzip.open('%s/%s_barcode2.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'wt')]
             #Read, CB1, CB2
             Read_statistics[sample]=0
         dictionary_for_fast_index_sample_search={}
         for sample in self.libraryindex.keys():
             dictionary_for_fast_index_sample_search[self.libraryindex[sample]]=sample
-        for read in self._ParseFastq([self.pathtolibraryindex,self.pathtocellbarcode1,self.pathtocellbarcode2umi,self.pathtorna]):
-            name=read[0].strip('\n')
-            librarybarcode=read[1][0].strip('\n')
-            CB1read=read[1][1].strip('\n')
-            CB2read=read[1][2].strip('\n')
-            rnaread=read[1][3].strip('\n')
-            CB1_qual=read[2][1].strip('\n')
-            CB2_qual=read[2][2].strip('\n')
-            rnaread_qual=read[2][3].strip('\n')
-            informative_name='%s %s:%s:%s'%(name,CB1read,CB2read[0:8],CB2read[8:])
-            if str(librarybarcode) in list(dictionary_for_fast_index_sample_search.keys()):
-                Total_Read+=1
-                sample=dictionary_for_fast_index_sample_search[str(librarybarcode)]
-                Read_statistics[sample]+=1
-                self._write_fastq(informative_name,'R1',readfile[sample][1],CB1read,CB1_qual)#ID,file_index,file,seq,quality_score
-                self._write_fastq(informative_name,'R1',readfile[sample][2],CB2read,CB2_qual)#ID,file_index,file,seq,quality_score
-                self._write_fastq(informative_name,'R1',readfile[sample][0],rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
-            else:
-                Total_Read+=1
-                Invalid_Library_Index+=1
+        if self.mutli_Lane is True:
+            for i in range(len(self.pathtolibraryindex)):
+                for read in self._ParseFastq([self.pathtolibraryindex[i],self.pathtocellbarcode1[i],self.pathtocellbarcode2umi[i],self.pathtorna[i]]):
+                    name=read[0].strip('\n')
+                    librarybarcode=read[1][0].strip('\n')
+                    CB1read=read[1][1].strip('\n')
+                    CB2read=read[1][2].strip('\n')
+                    rnaread=read[1][3].strip('\n')
+                    CB1_qual=read[2][1].strip('\n')
+                    CB2_qual=read[2][2].strip('\n')
+                    rnaread_qual=read[2][3].strip('\n')
+                    informative_name='%s %s:%s:%s'%(name,CB1read,CB2read[0:8],CB2read[8:])
+                    if str(librarybarcode) in list(dictionary_for_fast_index_sample_search.keys()):
+                        Total_Read+=1
+                        sample=dictionary_for_fast_index_sample_search[str(librarybarcode)]
+                        Read_statistics[sample]+=1
+                        self._write_fastq(informative_name,'R1',readfile[sample][1],CB1read,CB1_qual)#ID,file_index,file,seq,quality_score
+                        self._write_fastq(informative_name,'R1',readfile[sample][2],CB2read,CB2_qual)#ID,file_index,file,seq,quality_score
+                        self._write_fastq(informative_name,'R1',readfile[sample][0],rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                    else:
+                        if strict is False:
+                            if min([hammingdistance(librarybarcode,libraryindex) for libraryindex in list(dictionary_for_fast_index_sample_search.keys())])==1:
+                                correct_barcode=[libraryindex for libraryindex in list(dictionary_for_fast_index_sample_search.keys()) if hammingdistance(librarybarcode,libraryindex)==1][0]
+                                sample=dictionary_for_fast_index_sample_search[str(correct_barcode)]
+                                Total_Read+=1
+                                Read_statistics[sample]+=1
+                                self._write_fastq(informative_name,'R1',readfile[sample][1],CB1read,CB1_qual)#ID,file_index,file,seq,quality_score
+                                self._write_fastq(informative_name,'R1',readfile[sample][2],CB2read,CB2_qual)#ID,file_index,file,seq,quality_score
+                                self._write_fastq(informative_name,'R1',readfile[sample][0],rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                            else:
+                                Total_Read+=1
+                                Invalid_Library_Index+=1
+                        else:
+                            Total_Read+=1
+                            Invalid_Library_Index+=1
+        else:
+            for read in self._ParseFastq([self.pathtolibraryindex,self.pathtocellbarcode1,self.pathtocellbarcode2umi,self.pathtorna]):
+                name=read[0].strip('\n')
+                librarybarcode=read[1][0].strip('\n')
+                CB1read=read[1][1].strip('\n')
+                CB2read=read[1][2].strip('\n')
+                rnaread=read[1][3].strip('\n')
+                CB1_qual=read[2][1].strip('\n')
+                CB2_qual=read[2][2].strip('\n')
+                rnaread_qual=read[2][3].strip('\n')
+                informative_name='%s %s:%s:%s'%(name,CB1read,CB2read[0:8],CB2read[8:])
+                if str(librarybarcode) in list(dictionary_for_fast_index_sample_search.keys()):
+                    Total_Read+=1
+                    sample=dictionary_for_fast_index_sample_search[str(librarybarcode)]
+                    Read_statistics[sample]+=1
+                    self._write_fastq(informative_name,'R1',readfile[sample][1],CB1read,CB1_qual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(informative_name,'R1',readfile[sample][2],CB2read,CB2_qual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(informative_name,'R1',readfile[sample][0],rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                else:
+                    if strict is False:
+                        if min([hammingdistance(librarybarcode,libraryindex) for libraryindex in list(dictionary_for_fast_index_sample_search.keys())])==1:
+                            correct_barcode=[libraryindex for libraryindex in list(dictionary_for_fast_index_sample_search.keys()) if hammingdistance(librarybarcode,libraryindex)==1][0]
+                            sample=dictionary_for_fast_index_sample_search[str(correct_barcode)]
+                            Total_Read+=1
+                            Read_statistics[sample]+=1
+                            self._write_fastq(informative_name,'R1',readfile[sample][1],CB1read,CB1_qual)#ID,file_index,file,seq,quality_score
+                            self._write_fastq(informative_name,'R1',readfile[sample][2],CB2read,CB2_qual)#ID,file_index,file,seq,quality_score
+                            self._write_fastq(informative_name,'R1',readfile[sample][0],rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                        else:
+                            Total_Read+=1
+                            Invalid_Library_Index+=1
+                    else:
+                        Total_Read+=1
+                        Invalid_Library_Index+=1
         for sample in readfile:
             for file in readfile[sample]:
                 file.close()
-            os.system('gzip %s'%self.file_location[sample][0])
-            os.system('gzip %s'%self.file_location[sample][1])
-            os.system('gzip %s'%self.file_location[sample][2])
+            #os.system('gzip %s'%self.file_location[sample][0])
+            #os.system('gzip %s'%self.file_location[sample][1])
+            #os.system('gzip %s'%self.file_location[sample][2])
         with open('%s/Read_statistics_for_demuliplexing.tsv'%(self.outputdir), "w", newline="") as csvfile:
             writer=csv.writer(csvfile,delimiter='\t')
             writer.writerow(['Category','Read Number','Percentage'])
             writer.writerow(['Total number of Reads',Total_Read,Total_Read/Total_Read])
             for sample in Read_statistics.keys():
-                if Read_statistics[sample]!=0:
-                    writer.writerow([sample,Read_statistics[sample],Read_statistics[sample]/Total_Read])
-                else:
-                    writer.writerow([sample,0,0.0])
+                writer.writerow([sample,Read_statistics[sample],Read_statistics[sample]/Total_Read])
             writer.writerow(['Reads not associated with any sample',Invalid_Library_Index,Invalid_Library_Index/Total_Read])
         csvfile.close()
     def correct_and_filter_kallisto(self):
         Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
         for sample in self.libraryindex.keys():
-            filtering_output_directory='%s/%s'%(self.outputdir,sample)
+            filtering_output_directory='%s/%s_kallisto'%(self.outputdir,sample)
             try:
                 os.mkdir(filtering_output_directory)
             except FileExistsError:
@@ -224,9 +272,9 @@ class inDrop_Data_processing:
             'Invalid_Both_CB':0
             }
             Cell_statistics={}#Structure: Cell_barcode:[[UMI_list],number of unique umis per cell, number of reads per cell]
-            CB1=open('%s/%s_filtered_CB1.fastq'%(filtering_output_directory,sample),'w+')
-            CB2=open('%s/%s_filtered_CB2.fastq'%(filtering_output_directory,sample),'w+')
-            RNA_read=open('%s/%s_filtered_Reads.fastq'%(filtering_output_directory,sample),'w+')
+            CB1=gzip.open('%s/%s_filtered_CB1.fastq.gz'%(filtering_output_directory,sample),'wt')
+            CB2=gzip.open('%s/%s_filtered_CB2.fastq.gz'%(filtering_output_directory,sample),'wt')
+            RNA_read=gzip.open('%s/%s_filtered_Reads.fastq.gz'%(filtering_output_directory,sample),'wt')
             for read in self._ParseFastq([self.unfiltered_file_location[sample]['CB1'],self.unfiltered_file_location[sample]['CB2'],self.unfiltered_file_location[sample]['RNA']]):
                 name=read[0].strip('\n')
                 CB1read=read[1][0].strip('\n')
@@ -269,34 +317,30 @@ class inDrop_Data_processing:
             CB1.close()
             CB2.close()
             RNA_read.close()
-            os.system('gzip %s'%('%s/%s_filtered_CB1.fastq'%(filtering_output_directory,sample)))
-            os.system('gzip %s'%('%s/%s_filtered_CB2.fastq'%(filtering_output_directory,sample)))
-            os.system('gzip %s'%('%s/%s_filtered_Reads.fastq'%(filtering_output_directory,sample)))
+            #os.system('gzip %s'%('%s/%s_filtered_CB1.fastq'%(filtering_output_directory,sample)))
+            #os.system('gzip %s'%('%s/%s_filtered_CB2.fastq'%(filtering_output_directory,sample)))
+            #os.system('gzip %s'%('%s/%s_filtered_Reads.fastq'%(filtering_output_directory,sample)))
             for cell in Cell_statistics:
                 Cell_statistics[cell][0]=0
-            if filtering_statistics['Total_read']!=0:
-                with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
-                    writer=csv.writer(csvfile,delimiter='\t')
-                    writer.writerow(['Category','Read Number','Percentage'])
-                    writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
-                    writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
-                    writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
-                    writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
-                    writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
-                csvfile.close()
-                with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
-                    writer=csv.writer(csvfile,delimiter='\t')
-                    writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
-                    for cell in Cell_statistics.keys():
-                        writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
-                csvfile.close()
-            else:
-                continue
-
+            with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+                writer=csv.writer(csvfile,delimiter='\t')
+                writer.writerow(['Category','Read Number','Percentage'])
+                writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
+                writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
+                writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
+            csvfile.close()
+            with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+                writer=csv.writer(csvfile,delimiter='\t')
+                writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
+                for cell in Cell_statistics.keys():
+                    writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
+            csvfile.close()
     def correct_and_filter_solo(self):
         Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
         for sample in self.libraryindex.keys():
-            filtering_output_directory='%s/%s'%(self.outputdir,sample)
+            filtering_output_directory='%s/%s_solo'%(self.outputdir,sample)
             try:
                 os.mkdir(filtering_output_directory)
             except FileExistsError:
@@ -310,8 +354,8 @@ class inDrop_Data_processing:
             'Invalid_Both_CB':0
             }
             Cell_statistics={}#Structure: Cell_barcode:[[UMI_list],number of unique umis per cell, number of reads per cell]
-            CB=open('%s/%s_STAR_CB.fastq'%(filtering_output_directory,sample),'w+')
-            RNA_read=open('%s/%s_STAR_Reads.fastq'%(filtering_output_directory,sample),'w+')
+            CB=gzip.open('%s/%s_STAR_CB.fastq.gz'%(filtering_output_directory,sample),'wt')
+            RNA_read=gzip.open('%s/%s_STAR_Reads.fastq.gz'%(filtering_output_directory,sample),'wt')
             for read in self._ParseFastq([self.unfiltered_file_location[sample]['CB1'],self.unfiltered_file_location[sample]['CB2'],self.unfiltered_file_location[sample]['RNA']]):
                 name=read[0].strip('\n')
                 CB1read=read[1][0].strip('\n')
@@ -354,8 +398,8 @@ class inDrop_Data_processing:
                             filtering_statistics['Invalid_CB2']+=1
             CB.close()
             RNA_read.close()
-            os.system('gzip %s'%('%s/%s_STAR_CB.fastq'%(filtering_output_directory,sample)))
-            os.system('gzip %s'%('%s/%s_STAR_Reads.fastq'%(filtering_output_directory,sample)))
+            #os.system('gzip %s'%('%s/%s_STAR_CB.fastq'%(filtering_output_directory,sample)))
+            #os.system('gzip %s'%('%s/%s_STAR_Reads.fastq'%(filtering_output_directory,sample)))
             for cell in Cell_statistics:
                 Cell_statistics[cell][0]=0
             with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
@@ -374,4 +418,161 @@ class inDrop_Data_processing:
                     writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
             csvfile.close()            
 
-
+class inDrop_Individual_Sample_processing(inDrop_Data_processing):
+    GEO=True
+    def __init__(self,pathtolibraryindex,pathtocellbarcode1,pathtocellbarcode2umi,pathtorna,libraryindex,outputdir,GEO=True):
+        try:
+            super().__init__(pathtolibraryindex=pathtolibraryindex,
+            pathtocellbarcode1=pathtocellbarcode1, 
+            pathtocellbarcode2umi=pathtocellbarcode2umi,
+            pathtorna=pathtorna,
+            libraryindex=libraryindex,
+            outputdir=outputdir)
+            self.GEO=GEO
+        except Exception as e:
+            print(str(e))
+    def _ParseGEOFastq(self,pathstofastqs):
+        if pathstofastqs[0].endswith('.gz'):
+            processes=[subprocess.Popen(['zcat',(fastq)],stdout=subprocess.PIPE) for fastq in pathstofastqs]
+            totalreads = [r.stdout for r in processes]
+        elif pathstofastqs[0].endswith('.bz2'):
+            processes=[subprocess.Popen(['bzcat',(fastq)],stdout=subprocess.PIPE) for fastq in pathstofastqs]
+            totalreads = [r.stdout for r in processes]
+        elif pathstofastqs[0].endswith('.fastq'):
+            processes=[subprocess.Popen(['cat',(fastq)],stdout=subprocess.PIPE) for fastq in pathstofastqs]
+            totalreads = [r.stdout for r in processes]
+        else:
+            sys.exit('The format of the file %s is not recognized.'%(str(pathtofastq)))
+        while True:
+            names=[next(read).decode().split(' ')[1] for read in totalreads]
+            Sequence=[next(read).decode() for read in totalreads]
+            Blank=[next(read).decode() for read in totalreads]
+            qualityscore= [next(read).decode() for read in totalreads]
+            assert all(name==names[0] for name in names)
+            if names:
+                yield [names[0], Sequence, qualityscore]
+            else:
+                break
+        for read in totalreads:
+            read.close()    
+    def Individual_sample_filter_kallisto(self):
+        Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
+        filtering_output_directory='%s/%s_kallisto'%(self.outputdir,str(list(self.libraryindex.keys())[0]))
+        try:
+            os.mkdir(filtering_output_directory)
+        except:
+            print('Nah, not a problem.')
+        filtering_statistics={
+        'Total_read':0,
+        'Valid_read':0,
+        'Invalid_CB1':0,
+        'Invalid_CB2':0,
+        'Invalid_Both_CB':0}
+        sample=str(list(self.libraryindex.keys())[0])
+        Cell_statistics={}#Structure: Cell_barcode:[[UMI_list],number of unique umis per cell, number of reads per cell]
+        CB1=gzip.open('%s/%s_filtered_CB1.fastq.gz'%(filtering_output_directory,sample),'wt')
+        CB2=gzip.open('%s/%s_filtered_CB2.fastq.gz'%(filtering_output_directory,sample),'wt')
+        RNA_read=gzip.open('%s/%s_filtered_Reads.fastq.gz'%(filtering_output_directory,sample),'wt')
+        if self.GEO is True:
+            for read in self._ParseGEOFastq([self.pathtocellbarcode1,self.pathtocellbarcode2umi,self.pathtorna]):
+                name=read[0].strip('\n')
+                CB1read=read[1][0].strip('\n')
+                CB2read=read[1][1].strip('\n')
+                rnaread=read[1][2].strip('\n')
+                CB1_qual=read[2][0].strip('\n')
+                CB2_qual=read[2][1].strip('\n')
+                rnaread_qual=read[2][2].strip('\n')
+                filtering_statistics['Total_read']+=1
+                umi=CB2read[8:]
+                if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
+                    writeCB1=Barcode_correction_dict[CB1read]
+                    writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    truecellname=writeCB1+writeCB2
+                    if truecellname in Cell_statistics:
+                        if umi not in Cell_statistics[truecellname][0]:
+                            Cell_statistics[truecellname][0].append(umi)
+                            Cell_statistics[truecellname][1]+=1
+                            Cell_statistics[truecellname][2]+=1
+                        else:
+                            Cell_statistics[truecellname][2]+=1
+                    else:
+                        Cell_statistics[truecellname]=[[],0,0]
+                        Cell_statistics[truecellname][0].append(umi)
+                        Cell_statistics[truecellname][1]+=1
+                        Cell_statistics[truecellname][2]+=1
+                    filtering_statistics['Valid_read']+=1
+                    self._write_fastq(writename,'R1',CB1,writeCB1,CB1_qual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',CB2,writeCB2+umi,CB2_qual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',RNA_read,rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                else:
+                    if CB1read not in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) not in Barcode_correction_dict:
+                        filtering_statistics['Invalid_Both_CB']+=1
+                    else:
+                        if CB1read not in Barcode_correction_dict:
+                            filtering_statistics['Invalid_CB1']+=1
+                        else:
+                            filtering_statistics['Invalid_CB2']+=1
+            CB1.close()
+            CB2.close()
+            RNA_read.close()
+        else:
+            for read in self._ParseFastq([self.pathtocellbarcode1,self.pathtocellbarcode2umi,self.pathtorna]):
+                name=read[0].strip('\n')
+                CB1read=read[1][0].strip('\n')
+                CB2read=read[1][1].strip('\n')
+                rnaread=read[1][2].strip('\n')
+                CB1_qual=read[2][0].strip('\n')
+                CB2_qual=read[2][1].strip('\n')
+                rnaread_qual=read[2][2].strip('\n')
+                filtering_statistics['Total_read']+=1
+                umi=CB2read[8:]
+                if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
+                    writeCB1=Barcode_correction_dict[CB1read]
+                    writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+                    writename='%s %s:%s:%s'%(name.split(' ')[0],writeCB1,writeCB2,umi)
+                    truecellname=writeCB1+writeCB2
+                    if truecellname in Cell_statistics:
+                        if umi not in Cell_statistics[truecellname][0]:
+                            Cell_statistics[truecellname][0].append(umi)
+                            Cell_statistics[truecellname][1]+=1
+                            Cell_statistics[truecellname][2]+=1
+                        else:
+                            Cell_statistics[truecellname][2]+=1
+                    else:
+                        Cell_statistics[truecellname]=[[],0,0]
+                        Cell_statistics[truecellname][0].append(umi)
+                        Cell_statistics[truecellname][1]+=1
+                        Cell_statistics[truecellname][2]+=1
+                    filtering_statistics['Valid_read']+=1
+                    self._write_fastq(writename,'R1',CB1,writeCB1,CB1_qual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',CB2,writeCB2+umi,CB2_qual)#ID,file_index,file,seq,quality_score
+                    self._write_fastq(writename,'R1',RNA_read,rnaread,rnaread_qual)#ID,file_index,file,seq,quality_score
+                else:
+                    if CB1read not in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) not in Barcode_correction_dict:
+                        filtering_statistics['Invalid_Both_CB']+=1
+                    else:
+                        if CB1read not in Barcode_correction_dict:
+                            filtering_statistics['Invalid_CB1']+=1
+                        else:
+                            filtering_statistics['Invalid_CB2']+=1
+            CB1.close()
+            CB2.close()
+            RNA_read.close()
+        for cell in Cell_statistics:
+            Cell_statistics[cell][0]=0
+        with open('%s/%s_filtering_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+            writer=csv.writer(csvfile,delimiter='\t')
+            writer.writerow(['Category','Read Number','Percentage'])
+            writer.writerow(['Total_read',filtering_statistics['Total_read'],filtering_statistics['Total_read']/filtering_statistics['Total_read']])
+            writer.writerow(['Valid_read',filtering_statistics['Valid_read'],filtering_statistics['Valid_read']/filtering_statistics['Total_read']])
+            writer.writerow(['Invalid_CB1',filtering_statistics['Invalid_CB1'],filtering_statistics['Invalid_CB1']/filtering_statistics['Total_read']])
+            writer.writerow(['Invalid_CB2',filtering_statistics['Invalid_CB2'],filtering_statistics['Invalid_CB2']/filtering_statistics['Total_read']])
+            writer.writerow(['Invalid_Both_CB',filtering_statistics['Invalid_Both_CB'],filtering_statistics['Invalid_Both_CB']/filtering_statistics['Total_read']])
+        csvfile.close()
+        with open('%s/%s_Cell_statistics.tsv'%(filtering_output_directory,sample), "w", newline="") as csvfile:
+            writer=csv.writer(csvfile,delimiter='\t')
+            writer.writerow(['Cellname','Number of unique UMI','Number of reads'])
+            for cell in Cell_statistics.keys():
+                writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
+        csvfile.close()
