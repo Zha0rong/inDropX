@@ -624,7 +624,7 @@ class inDrop_Individual_Sample_processing(inDrop_Data_processing):
                 if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
                     writeCB1=Barcode_correction_dict[CB1read]
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                    writeCB=writeCB1+writeCB1+umi
+                    writeCB=writeCB1+writeCB2+umi
                     writeCBqual=CB1_qual+CB2_qual
                     writename=''
                     if name.startswith('@'):
@@ -671,7 +671,7 @@ class inDrop_Individual_Sample_processing(inDrop_Data_processing):
                 if CB1read in Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in Barcode_correction_dict:
                     writeCB1=Barcode_correction_dict[CB1read]
                     writeCB2=reverse_compliment(Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                    writeCB=writeCB1+writeCB1+umi
+                    writeCB=writeCB1+writeCB2+umi
                     writeCBqual=CB1_qual+CB2_qual
                     writename=''
                     if name.startswith('@'):
