@@ -244,9 +244,6 @@ class inDrop_Data_processing:
         for sample in readfile:
             for file in readfile[sample]:
                 file.close()
-            #os.system('gzip %s'%self.file_location[sample][0])
-            #os.system('gzip %s'%self.file_location[sample][1])
-            #os.system('gzip %s'%self.file_location[sample][2])
         with open('%s/Read_statistics_for_demuliplexing.tsv'%(self.outputdir), "w", newline="") as csvfile:
             writer=csv.writer(csvfile,delimiter='\t')
             writer.writerow(['Category','Read Number','Percentage'])
@@ -341,7 +338,21 @@ class inDrop_Data_processing:
                 for cell in Cell_statistics.keys():
                     writer.writerow([cell,Cell_statistics[cell][1],Cell_statistics[cell][2]])
             csvfile.close()
-    def correct_and_filter_solo(self):
+    def Demultiplex_and_correct_filter(self,strict=False):
+        Total_Read=0
+        Invalid_Library_Index=0
+        Read_statistics={}
+        #Parse fastq files into a dictionary
+        readfile={}
+        for sample in self.libraryindex.keys():
+            readfile[sample]=[gzip.open('%s/%s_read.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'wt'),
+                              gzip.open('%s/%s_barcode.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'wt')]
+            #Read, CB1, CB2
+            Read_statistics[sample]=0
+        dictionary_for_fast_index_sample_search={}
+        for sample in self.libraryindex.keys():
+            dictionary_for_fast_index_sample_search[self.libraryindex[sample]]=sample		
+	def correct_and_filter_solo(self):
         Barcode_correction_dict=build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
         for sample in self.libraryindex.keys():
             filtering_output_directory='%s/%s_solo'%(self.outputdir,sample)
