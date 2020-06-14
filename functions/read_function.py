@@ -122,6 +122,22 @@ class inDrop_Data_processing:
                 sys.exit('The sample index is wrong.')
         except Exception as e:
             print(str(e))
+	def polyATrimmer(self,seq,qual,number_of_polyA_allowed,min_length):
+		polyA_length=0
+		seq=seq
+		qual=qual
+		keep_read=True
+		for base in seq[::-1]:
+			if base != 'A':
+				break
+			polyA_length+=1
+		Trim_position=len(seq)-max(polyA_length-number_of_polyA_allowed,0)
+		if Trim_position < min_length:
+			keep_read=False
+		else:
+			seq=seq[:Trim_position]
+			qual=qual[:qual]
+		return [seq, qual, keep_read]
     def _write_fastq(self,ID,file_index,file,seq,quality_score):
         if file_index=='R1':
             file.write('%s\n'%ID)
@@ -347,7 +363,7 @@ class inDrop_Data_processing:
         for sample in self.libraryindex.keys():
             readfile[sample]=[gzip.open('%s/%s_read.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'wt'),
                               gzip.open('%s/%s_barcode.fastq.gz'%(self.outputdir,sample+'_'+str(self.libraryindex[sample])),'wt')]
-            #Read, CB1, CB2
+            #Create only two fastq: one for RNA read and one for CellBarcode+UMI
             Read_statistics[sample]=0
         dictionary_for_fast_index_sample_search={}
         for sample in self.libraryindex.keys():
