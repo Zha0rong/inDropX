@@ -1,9 +1,8 @@
 import os
 import bz2
 import subprocess
-from functions import read_function
-
-
+import read_function
+import project_recorder
 
 
 
@@ -14,7 +13,7 @@ if __name__ == '__main__':
                             pathtocellbarcode2umi='',
                             pathtolibraryindex='',
                             pathtorna='',
-                            libraryindex=sample_metadata, outputdir='')
+                            libraryindex='', outputdir='')
     a.Demultiplex()
     a.correct_and_filter()
 
