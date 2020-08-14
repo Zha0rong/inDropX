@@ -130,11 +130,11 @@ class inDrop_Data_processing:
                 if type(pathtolibraryindex) is list:
                     self.mutli_Lane = True
             else:
-                sys.exit('The sample index is wrong.')
+                sys.exit('The library index needs to be a dictionary.')
         except Exception as e:
             print(str(e))
 
-    def polyATrimmer(self, seq, qual, number_of_polyA_allowed, min_length):
+    def polyATrimmer(self, seq, qual,min_length, number_of_polyA_allowed=5):
         polyA_length = 0
         seq = seq
         qual = qual
