@@ -5,14 +5,10 @@ import sys
 from collections import defaultdict, OrderedDict
 from itertools import product, combinations
 import gzip
+import bz2
 
 
 def seq_neighborhood(seq, n_subs=1):
-    """
-    Given a sequence, yield all sequences within n_subs substitutions of
-    that sequence by looping through each combination of base pairs within
-    each combination of positions.
-    """
     for positions in combinations(range(len(seq)), n_subs):
         # yields all unique combinations of indices for n_subs mutations
         for subs in product(*("ATGCN",) * n_subs):
@@ -25,12 +21,6 @@ def seq_neighborhood(seq, n_subs=1):
 
 
 def build_barcode_neighborhoods(barcodelist):
-    """
-    Given a set of barcodes, produce sequences which can unambiguously be
-    mapped to these barcodes, within 2 substitutions. If a sequence maps to
-    multiple barcodes, get rid of it. However, if a sequences maps to a bc1 with
-    1change and another with 2changes, keep the 1change mapping.
-    """
 
     # contains all mutants that map uniquely to a barcode
     clean_mapping = dict()
@@ -90,6 +80,41 @@ def hammingdistance(string, reference):
     return answer
 
 
+def write_fastq(ID, file_index, file, seq, quality_score):
+    file.write('%s\n' % ID)
+    file.write('%s\n' % seq)
+    file.write('+\n')
+    file.write('%s\n' % quality_score)
+
+
+def ParseFastq( pathstofastqs):
+    if pathstofastqs[0].endswith('.gz'):
+        totalreads = [gzip.open(files) for files in pathstofastqs]
+    elif pathstofastqs[0].endswith('.bz2'):
+        totalreads = [bz2.open(files) for files in pathstofastqs]
+    elif pathstofastqs[0].endswith('.fastq'):
+        totalreads = [open(files) for files in pathstofastqs]
+    else:
+        sys.exit('The format of the file %s is not recognized.' % (str(pathstofastqs)))
+    while True:
+        try:
+            names = [next(read).decode().split(' ')[0] for read in totalreads]
+            Sequence = [next(read).decode() for read in totalreads]
+            Blank = [next(read).decode() for read in totalreads]
+            qualityscore = [next(read).decode() for read in totalreads]
+            assert all(name == names[0] for name in names)
+            if names:
+                try:
+                    yield [names[0], Sequence, qualityscore]
+                except:
+                    return
+            else:
+                break
+        except StopIteration:
+            break
+    for read in totalreads:
+        read.close()
+
 
 
 class inDrop_Data_processing:
@@ -101,39 +126,37 @@ class inDrop_Data_processing:
     # Library index will be a dictionary with sample name as keys
     outputdir = ''
     cellbarcodewhitelist = []
-    file_location = {}  # Record the location of every file in every sample: CB1, CB2, Read
-    unfiltered_file_location = {}
-    mutli_Lane = False
+    file_location = {}  # Record the location of every file in every sample: CB1CB2UMI, Read
 
     def __init__(self, pathtolibraryindex, pathtocellbarcode1, pathtocellbarcode2umi, pathtorna, libraryindex,
                  outputdir):
-        try:
-            if type(libraryindex) is dict:
-                self.pathtolibraryindex = pathtolibraryindex
-                self.pathtocellbarcode1 = pathtocellbarcode1
-                self.pathtocellbarcode2umi = pathtocellbarcode2umi
-                self.pathtorna = pathtorna
-                self.libraryindex = libraryindex
-                self.outputdir = outputdir
-                with open('whitelist/cellbarcode.txt') as f:
-                    for line in f:
-                        self.cellbarcodewhitelist.append(line.rstrip())
-                f.close()
-                # Check for the correct direction of library index.
-                for sample in list(self.libraryindex.keys()):
-                    self.file_location[sample] = [
-                        '%s/%s_read.fastq' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        '%s/%s_barcode1.fastq' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        '%s/%s_barcode2.fastq' % (self.outputdir, sample + '_' + str(self.libraryindex[sample]))]
-                    self.unfiltered_file_location[sample] = {
-                        'RNA': '%s/%s_read.fastq.gz' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        'CB1': '%s/%s_barcode1.fastq.gz' % (
-                        self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        'CB2': '%s/%s_barcode2.fastq.gz' % (
-                        self.outputdir, sample + '_' + str(self.libraryindex[sample]))}
-                if type(pathtolibraryindex) is list:
-                    self.mutli_Lane = True
-            else:
-                sys.exit('The library index needs to be a dictionary.')
-        except Exception as e:
-            print(str(e))
+        if type(libraryindex) is dict:
+            self.pathtolibraryindex = pathtolibraryindex
+            self.pathtocellbarcode1 = pathtocellbarcode1
+            self.pathtocellbarcode2umi = pathtocellbarcode2umi
+            self.pathtorna = pathtorna
+            self.libraryindex = libraryindex
+            self.outputdir = outputdir
+            with open('whitelist/cellbarcode.txt') as f:
+                for line in f:
+                    self.cellbarcodewhitelist.append(line.rstrip())
+            f.close()
+            # Check for the correct direction of library index.
+            for sample in list(self.libraryindex.keys()):
+                self.file_location[sample] = [
+                        '%s/%s_CBUMI.fastq.gz' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
+                        '%s/%s_read.fastq.gz' % (self.outputdir, sample + '_' + str(self.libraryindex[sample]))]
+        else:
+            sys.exit('The library index needs to be a dictionary.')
+        if os.path.isfile(self.pathtolibraryindex) is False:
+            sys.exit('InDropX pipeline exiting, the library index fastq file does not exist.')
+        if os.path.isfile(self.pathtocellbarcode1) is False:
+            sys.exit('InDropX pipeline exiting, the Cellbarcode1 fastq file does not exist.')
+        if os.path.isfile(self.pathtocellbarcode2umi) is False:
+            sys.exit('InDropX pipeline exiting, the Cellbarcode2 and UMI fastq file does not exist.')
+        if os.path.isfile(self.pathtorna) is False:
+            sys.exit('InDropX pipeline exiting, the RNA read fastq file does not exist.')
+        if os.path.isfile(self.pathtorna) is False:
+            sys.exit('InDropX pipeline exiting, the RNA read fastq file does not exist.')
+        if os.path.isdir(self.outputdir) is False:
+            sys.exit('InDropX pipeline exiting, the RNA read fastq file does not exist.')
