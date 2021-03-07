@@ -87,7 +87,7 @@ def write_fastq(ID, file_index, file, seq, quality_score):
     file.write('%s\n' % quality_score)
 
 
-def ParseFastq( pathstofastqs):
+def ParseFastq(pathstofastqs):
     if pathstofastqs[0].endswith('.gz'):
         totalreads = [gzip.open(files) for files in pathstofastqs]
     elif pathstofastqs[0].endswith('.bz2'):
