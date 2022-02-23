@@ -20,7 +20,7 @@ class inDrop_Data_processing:
     cellbarcodewhitelist = []
     file_location = {}  # Record the location of every file in every sample: CB1, CB2, Read
     unfiltered_file_location = {}
-    mutli_Lane = False
+    sd = False
 
     def __init__(self, pathtolibraryindex, pathtocellbarcode1, pathtocellbarcode2umi, pathtorna, libraryindex,
                  outputdir):
@@ -38,10 +38,6 @@ class inDrop_Data_processing:
                 f.close()
                 # Check for the correct direction of library index.
                 for sample in list(self.libraryindex.keys()):
-                    self.file_location[sample] = [
-                        '%s/%s_read.fastq' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        '%s/%s_barcode1.fastq' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        '%s/%s_barcode2.fastq' % (self.outputdir, sample + '_' + str(self.libraryindex[sample]))]
                     self.unfiltered_file_location[sample] = {
                         'RNA': '%s/%s_read.fastq.gz' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
                         'CB1': '%s/%s_barcode1.fastq.gz' % (
@@ -54,23 +50,6 @@ class inDrop_Data_processing:
                 sys.exit('The library index needs to be a dictionary.')
         except Exception as e:
             print(str(e))
-
-    def polyATrimmer(self, seq, qual,min_length, number_of_polyA_allowed=5):
-        polyA_length = 0
-        seq = seq
-        qual = qual
-        keep_read = True
-        for base in seq[::-1]:
-            if base != 'A':
-                break
-            polyA_length += 1
-        Trim_position = len(seq) - max(polyA_length - number_of_polyA_allowed, 0)
-        if Trim_position < min_length:
-            keep_read = False
-        else:
-            seq = seq[:Trim_position]
-            qual = qual[:qual]
-        return [seq, qual, keep_read]
 
     def _write_fastq(self, ID, file_index, file, seq, quality_score):
         if file_index == 'R1':

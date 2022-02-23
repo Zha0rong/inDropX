@@ -66,6 +66,10 @@ def build_barcode_neighborhoods(barcodelist):
 
 
 def reverse_compliment(sequence):
+    """
+    Given a sequence consists of A, T, C and G, find reverse compliment of the sequence.
+    """
+
     reference = {'A': 'T', 'C': 'G', 'T': 'A', 'G': 'C', 'N': 'N'}
     reversecompliment = ''.join(reference[x] for x in sequence[::-1])
     return reversecompliment
@@ -79,6 +83,9 @@ def average_phred_score_calculation(string):
 
 
 def hammingdistance(string, reference):
+    """
+    Given two sequences, find the hamming distance.
+    """
     answer = 0
     if (len(string) == len(reference)):
         for i in range(len(string)):
@@ -90,6 +97,10 @@ def hammingdistance(string, reference):
 
 
 def ParseFastq(pathstofastqs):
+    """
+    :param pathstofastqs: a list of fastq file directories.
+    Given a list [] of fastq directories (uncompressed, gzip compressed or bz2 compressed), extract sequence ID, Sequence(s) and qualityscore(s) from it.
+    """
     if pathstofastqs[0].endswith('.gz'):
         processes = [gzip.open(fastq) for fastq in pathstofastqs]
     elif pathstofastqs[0].endswith('.bz2'):
@@ -112,6 +123,15 @@ def ParseFastq(pathstofastqs):
         read.close()
 
 def write_fastq(file,ID, seq, quality_score):
+    """
+
+    :param file: the fastq file directory the read will be written to
+    :param ID: ID of the Sequence
+    :param seq: Sequence
+    :param quality_score: Phred score of the Sequence
+    :return: None
+    A function to write sequence to a fastq file.
+    """
     file.write('%s\n' % ID)
     file.write('%s\n' % seq)
     file.write('+\n')
