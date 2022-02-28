@@ -115,36 +115,6 @@ def polyATrimmer(seq, qual,min_length, number_of_polyA_allowed=5):
 
 def ParseFastq(pathstofastqs):
     """
-    :param pathstofastqs: a list of fastq file directories.
-    Given a list [] of fastq directories (uncompressed, gzip compressed or bz2 compressed), extract sequence ID, Sequence(s) and qualityscore(s) from it.
-    """
-    if pathstofastqs[0].endswith('.gz'):
-        processes = [gzip.open(fastq) for fastq in pathstofastqs]
-    elif pathstofastqs[0].endswith('.bz2'):
-        processes = [bz2.open(fastq) for fastq in pathstofastqs]
-    elif pathstofastqs[0].endswith('.fastq'):
-        processes = [open(fastq) for fastq in pathstofastqs]
-    else:
-        sys.exit('The format of the file %s is not recognized.' % (str(pathstofastqs)))
-    while True:
-        names = [next(read).decode().split(' ')[0] for read in processes]
-        Sequence = [next(read).decode() for read in processes]
-        Blank = [next(read).decode() for read in processes]
-        qualityscore = [next(read).decode() for read in processes]
-        assert all(name == names[0] for name in names)
-        if names:
-            try:
-                yield [names[0], Sequence, qualityscore]
-            except StopIteration:
-                return
-
-        else:
-            break
-    for read in processes:
-        read.close()
-
-def ParseFastq_Multi(pathstofastqs):
-    """
     :param pathstofastqs: list of list of fastq.
     Given a list [] of fastq directories (uncompressed, gzip compressed or bz2 compressed), extract sequence ID, Sequence(s) and qualityscore(s) from it.
     """
@@ -158,20 +128,21 @@ def ParseFastq_Multi(pathstofastqs):
         else:
             sys.exit('The format of the file %s is not recognized.' % (str(pathstofastqs[i])))
         while True:
-            names = [next(read).decode().split(' ')[0] for read in processes]
-            Sequence = [next(read).decode() for read in processes]
-            Blank = [next(read).decode() for read in processes]
-            qualityscore = [next(read).decode() for read in processes]
-            assert all(name == names[0] for name in names)
-            if names:
-                try:
+            try:
+                names = [next(read).encode().decode().split(' ')[0] for read in processes]
+                Sequence = [next(read).encode().decode() for read in processes]
+                Blank = [next(read).encode().decode() for read in processes]
+                qualityscore = [next(read).encode().decode() for read in processes]
+                assert all(name == names[0] for name in names)
+                if names:
                     yield [names[0], Sequence, qualityscore]
-                except StopIteration:
-                    return
-            else:
-                break
+                else:
+                    break
+            except StopIteration:
+                return
         for read in processes:
             read.close()
+
 
 def write_fastq(file,ID, seq, quality_score):
     """
