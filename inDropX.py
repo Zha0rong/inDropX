@@ -2,7 +2,6 @@ import os
 import bz2
 import subprocess
 import read_function
-import project_recorder
 
 
 
@@ -14,6 +13,5 @@ if __name__ == '__main__':
                             pathtolibraryindex='',
                             pathtorna='',
                             libraryindex='', outputdir='')
-    a.Demultiplex()
-    a.correct_and_filter()
+    a.Demultiplexing_and_Correcting()
 

@@ -95,6 +95,23 @@ def hammingdistance(string, reference):
         answer = -1
     return answer
 
+def polyATrimmer(seq, qual,min_length, number_of_polyA_allowed=5):
+    polyA_length = 0
+    seq = seq
+    qual = qual
+    keep_read = True
+    for base in seq[::-1]:
+        if base != 'A':
+            break
+        polyA_length += 1
+    Trim_position = len(seq) - max(polyA_length - number_of_polyA_allowed, 0)
+    if Trim_position < min_length:
+        keep_read = False
+    else:
+        seq = seq[:Trim_position]
+        qual = qual[:qual]
+    return [seq, qual, keep_read]
+
 
 def ParseFastq(pathstofastqs):
     """
