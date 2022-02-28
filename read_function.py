@@ -54,6 +54,7 @@ class inDrop_Data_processing:
 
                 # Check for the correct direction of library index.
                 for sample in list(self.libraryindex.keys()):
+                    os.mkdir('%s/%s'% (self.outputdir,sample))
                     self.unfiltered_file_location[sample] = {
                         'RNA': '%s/%s_read.fastq.gz' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
                         'CB1': '%s/%s_barcode1.fastq.gz' % (
@@ -61,11 +62,11 @@ class inDrop_Data_processing:
                         'CB2': '%s/%s_barcode2.fastq.gz' % (
                         self.outputdir, sample + '_' + str(self.libraryindex[sample]))}
                     self.output_central[sample] = {
-                        'Unfiltered_CB1': '%s/%s/%s_barcode1.fastq.gz' % (self.outputdir,sample, sample),
-                        'Unfiltered_CB2': '%s/%s/%s_barcode2.fastq.gz' % (self.outputdir,sample, sample),
-                        'Unfiltered_RNA': '%s/%s/%s_read.fastq.gz' % (self.outputdir, sample, sample),
-                        'Filtered_CB': '%s/%s/%s.filtered.barcodes.umi.fastq.gz' % (self.outputdir, sample, sample),
-                        'Filtered_RNA': '%s/%s/%s.filtered.read.fastq.gz' % (self.outputdir, sample, sample),
+                        'Unfiltered_CB1': gzip.open('%s/%s/%s_barcode1.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
+                        'Unfiltered_CB2': gzip.open('%s/%s/%s_barcode2.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
+                        'Unfiltered_RNA': gzip.open('%s/%s/%s_read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
+                        'Filtered_CB': gzip.open('%s/%s/%s.filtered.barcodes.umi.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
+                        'Filtered_RNA': gzip.open('%s/%s/%s.filtered.read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
                         'Filtering.Statistics': {
                             'Total_read': 0,
                             'Valid_read': 0,
@@ -117,8 +118,7 @@ class inDrop_Data_processing:
                     '''Insert Correcting and Filtering here'''
                     self.output_central[sample]['Filtering.Statistics']['Total_read'] += 1
                     UMI = CB2read[8:]
-                    if CB1read in self.Barcode_correction_dict and reverse_compliment(
-                            CB2read[0:8]) in self.Barcode_correction_dict:
+                    if CB1read in self.Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in self.Barcode_correction_dict:
                         writeCB1 = self.Barcode_correction_dict[CB1read]
                         writeCB2 = reverse_compliment(self.Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
                         writename = ''
