@@ -90,8 +90,6 @@ class inDrop_Data_processing:
         Total_Read = 0
         Invalid_Library_Index = 0
         Read_statistics = {}
-        # Parse fastq files into a dictionary
-        readfile = {}
         for sample in self.libraryindex.keys():
             Read_statistics[sample] = 0
         dictionary_for_fast_index_sample_search = {}
@@ -103,6 +101,8 @@ class inDrop_Data_processing:
                 librarybarcode = read[1][0].strip('\n')
                 CB1read = read[1][1].strip('\n')
                 CB2read = read[1][2].strip('\n')
+                if len(CB2read) != 14 or len(CB2read) != 8 or len(librarybarcode) != 8:
+                    sys.exit('Pipeline cannot extract UMI and Cellbarcode 2 from the fastq file, this is likely because of wrong fastq file being assigned.')
                 rnaread = read[1][3].strip('\n')
                 CB1_qual = read[2][1].strip('\n')
                 CB2_qual = read[2][2].strip('\n')
