@@ -133,7 +133,11 @@ def ParseFastq(pathstofastqs):
         qualityscore = [next(read).decode() for read in processes]
         assert all(name == names[0] for name in names)
         if names:
-            yield [names[0], Sequence, qualityscore]
+            try:
+                yield [names[0], Sequence, qualityscore]
+            except StopIteration:
+                return
+
         else:
             break
     for read in processes:
@@ -145,11 +149,11 @@ def ParseFastq_Multi(pathstofastqs):
     Given a list [] of fastq directories (uncompressed, gzip compressed or bz2 compressed), extract sequence ID, Sequence(s) and qualityscore(s) from it.
     """
     for i in range(len(pathstofastqs)):
-        if pathstofastqs[0].endswith('.gz'):
+        if pathstofastqs[i][0].endswith('.gz'):
             processes = [gzip.open(fastq) for fastq in pathstofastqs[i]]
-        elif pathstofastqs[0].endswith('.bz2'):
+        elif pathstofastqs[i][0].endswith('.bz2'):
             processes = [bz2.open(fastq) for fastq in pathstofastqs[i]]
-        elif pathstofastqs[0].endswith('.fastq'):
+        elif pathstofastqs[i][0].endswith('.fastq'):
             processes = [open(fastq) for fastq in pathstofastqs[i]]
         else:
             sys.exit('The format of the file %s is not recognized.' % (str(pathstofastqs[i])))
@@ -160,7 +164,10 @@ def ParseFastq_Multi(pathstofastqs):
             qualityscore = [next(read).decode() for read in processes]
             assert all(name == names[0] for name in names)
             if names:
-                yield [names[0], Sequence, qualityscore]
+                try:
+                    yield [names[0], Sequence, qualityscore]
+                except StopIteration:
+                    return
             else:
                 break
         for read in processes:
