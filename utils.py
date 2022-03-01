@@ -1,7 +1,5 @@
-import os
-import csv
 import sys
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 from itertools import product, combinations
 import gzip
 import bz2
@@ -95,7 +93,8 @@ def hammingdistance(string, reference):
         answer = -1
     return answer
 
-def polyATrimmer(seq, qual,min_length, number_of_polyA_allowed=5):
+def Trimmer(seq, qual,min_length=20, number_of_polyA_allowed=5):
+    adapters=['CTGTCTCTTATA','TGGAATTCTCGG','AGATCGGAAGAGC','ACTGTCTCTTATA']
     polyA_length = 0
     seq = seq
     qual = qual
@@ -107,9 +106,25 @@ def polyATrimmer(seq, qual,min_length, number_of_polyA_allowed=5):
     Trim_position = len(seq) - max(polyA_length - number_of_polyA_allowed, 0)
     if Trim_position < min_length:
         keep_read = False
+        return [seq, qual, keep_read]
+
     else:
         seq = seq[:Trim_position]
-        qual = qual[:qual]
+        qual = qual[:Trim_position]
+    if keep_read == True:
+        adapter_detected=False
+        adapter_tested=0
+        while adapter_tested<=(len(adapters)-1) or adapter_detected == False:
+            adapter=adapters[adapter_tested]
+            if adapter in seq:
+                adapter_detected = True
+                seq = seq[seq.find(adapter) + len(adapter)::]
+                qual = qual[seq.find(adapter) + len(adapter)::]
+                if len(seq) < min_length:
+                    keep_read = False
+            else:
+                adapter_tested += 1
+
     return [seq, qual, keep_read]
 
 
@@ -129,10 +144,20 @@ def ParseFastq(pathstofastqs):
             sys.exit('The format of the file %s is not recognized.' % (str(pathstofastqs[i])))
         while True:
             try:
-                names = [next(read).decode().split(' ')[0] for read in processes]
-                Sequence = [next(read).decode() for read in processes]
-                Blank = [next(read).decode() for read in processes]
-                qualityscore = [next(read).decode() for read in processes]
+                '''
+                If the next(read) returns byte decode it, if it returns string encode and decode.
+                Handles potential different behaviors.
+                '''
+                try:
+                    names = [next(read).decode().split(' ')[0] for read in processes]
+                    Sequence = [next(read).decode() for read in processes]
+                    Blank = [next(read).decode() for read in processes]
+                    qualityscore = [next(read).decode() for read in processes]
+                except (UnicodeDecodeError, AttributeError):
+                    names = [next(read).encode().decode().split(' ')[0] for read in processes]
+                    Sequence = [next(read).encode().decode() for read in processes]
+                    Blank = [next(read).encode().decode() for read in processes]
+                    qualityscore = [next(read).encode().decode() for read in processes]
                 assert all(name == names[0] for name in names)
                 if names:
                     yield [names[0], Sequence, qualityscore]

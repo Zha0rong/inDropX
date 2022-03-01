@@ -1,11 +1,6 @@
-import os
 import csv
-import sys
-from collections import defaultdict, OrderedDict
-from itertools import product, combinations
-import gzip
+import os
 from utils import *
-import bz2
 
 
 class inDrop_Data_processing:
@@ -23,8 +18,9 @@ class inDrop_Data_processing:
     output_central={}
     Barcode_correction_dict = {}
     Demultiplexing_statistics=''
+    post_trimming_length=20
     def __init__(self, pathtolibraryindex, pathtocellbarcode1, pathtocellbarcode2umi, pathtorna, libraryindex,
-                 outputdir,version = 'V3'):
+                 outputdir,version = 'V3',post_trimming_length=20):
         try:
 
             if type(libraryindex) is dict:
@@ -35,6 +31,7 @@ class inDrop_Data_processing:
                 self.libraryindex = libraryindex
                 self.outputdir = outputdir
                 self.Demultiplexing_statistics = '%s/Read_statistics_for_demultiplexing.tsv' % self.outputdir
+                self.post_trimming_length=post_trimming_length
                 if len(self.pathtolibraryindex) != len(self.pathtocellbarcode1) != len(self.pathtocellbarcode2umi) != len(self.pathtorna):
                     sys.exit('The fastq files number is wrong.')
                 if version == 'V3':
@@ -63,9 +60,9 @@ class inDrop_Data_processing:
                         'CB2': '%s/%s_barcode2.fastq.gz' % (
                         self.outputdir, sample + '_' + str(self.libraryindex[sample]))}
                     self.output_central[sample] = {
-                        'Unfiltered_CB1': gzip.open('%s/%s/%s_barcode1.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
-                        'Unfiltered_CB2': gzip.open('%s/%s/%s_barcode2.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
-                        'Unfiltered_RNA': gzip.open('%s/%s/%s_read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
+                        'Unfiltered_CB1': gzip.open('%s/%s/%s.barcode1.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
+                        'Unfiltered_CB2': gzip.open('%s/%s/%s.barcode2.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
+                        'Unfiltered_RNA': gzip.open('%s/%s/%s.read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
                         'Filtered_CB': gzip.open('%s/%s/%s.filtered.barcodes.umi.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
                         'Filtered_RNA': gzip.open('%s/%s/%s.filtered.read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
                         'Filtering.Statistics': {

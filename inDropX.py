@@ -1,17 +1,18 @@
 import os
 import bz2
 import subprocess
-import read_function
+from inDrop_Data_processing import *
+import yaml
 
 
 
 
 
 if __name__ == '__main__':
-    a=read_function.inDrop_Data_processing(pathtocellbarcode1='',
+    inDrop_Data_processor=inDrop_Data_processing(pathtocellbarcode1='',
                             pathtocellbarcode2umi='',
                             pathtolibraryindex='',
                             pathtorna='',
                             libraryindex='', outputdir='')
-    a.Demultiplexing_and_Correcting()
+    inDrop_Data_processor.Demultiplexing_and_Correcting()
 
