@@ -104,7 +104,7 @@ class inDrop_Data_processing:
                 CB2_qual = read[2][2].strip('\n')
                 rnaread_qual = read[2][3].strip('\n')
                 informative_name = '%s %s:%s:%s' % (name, CB1read, CB2read[0:8], CB2read[8:])
-                if str(librarybarcode) in list(dictionary_for_fast_index_sample_search.keys()):
+                if str(librarybarcode) in dictionary_for_fast_index_sample_search:
                     Total_Read += 1
                     sample = dictionary_for_fast_index_sample_search[str(librarybarcode)]
                     Read_statistics[sample] += 1
@@ -156,8 +156,8 @@ class inDrop_Data_processing:
                         self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'] += 1
                 else:
                     if strict is False:
-                        if min([hammingdistance(librarybarcode, libraryindex) for libraryindex in list(dictionary_for_fast_index_sample_search.keys())]) == 1:
-                            correct_barcode = [libraryindex for libraryindex in list(dictionary_for_fast_index_sample_search.keys()) if hammingdistance(librarybarcode, libraryindex) == 1][0]
+                        if min([hammingdistance(librarybarcode, libraryindex) for libraryindex in dictionary_for_fast_index_sample_search]) == 1:
+                            correct_barcode = [libraryindex for libraryindex in dictionary_for_fast_index_sample_search if hammingdistance(librarybarcode, libraryindex) == 1][0]
 
                             sample = dictionary_for_fast_index_sample_search[str(correct_barcode)]
                             Total_Read += 1
