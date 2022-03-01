@@ -1,7 +1,7 @@
 import csv
 import os
 from utils import *
-
+import yaml
 
 class inDrop_Data_processing:
     pathtolibraryindex = ''
@@ -255,3 +255,12 @@ class inDrop_Data_processing:
             writer.writerow(
                 ['Reads not associated with any sample', Invalid_Library_Index, Invalid_Library_Index / Total_Read])
         csvfile.close()
+
+def yaml_processor(yaml_directory):
+    Results = {'pathtocellbarcode1':'',
+                            'pathtocellbarcode2umi':'',
+                            'pathtolibraryindex':'',
+                            'pathtorna':'',
+                            'libraryindex':''}
+
+    return Results
