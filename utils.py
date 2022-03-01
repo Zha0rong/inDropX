@@ -129,10 +129,10 @@ def ParseFastq(pathstofastqs):
             sys.exit('The format of the file %s is not recognized.' % (str(pathstofastqs[i])))
         while True:
             try:
-                names = [next(read).encode().decode().split(' ')[0] for read in processes]
-                Sequence = [next(read).encode().decode() for read in processes]
-                Blank = [next(read).encode().decode() for read in processes]
-                qualityscore = [next(read).encode().decode() for read in processes]
+                names = [next(read).decode().split(' ')[0] for read in processes]
+                Sequence = [next(read).decode() for read in processes]
+                Blank = [next(read).decode() for read in processes]
+                qualityscore = [next(read).decode() for read in processes]
                 assert all(name == names[0] for name in names)
                 if names:
                     yield [names[0], Sequence, qualityscore]
