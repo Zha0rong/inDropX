@@ -114,7 +114,7 @@ def Trimmer(seq, qual,min_length=20, number_of_polyA_allowed=5):
     if keep_read == True:
         adapter_detected=False
         adapter_tested=0
-        while adapter_tested<=(len(adapters)-1) or adapter_detected == False:
+        while adapter_tested<=(len(adapters)-1) and adapter_detected == False:
             adapter=adapters[adapter_tested]
             if adapter in seq:
                 adapter_detected = True
