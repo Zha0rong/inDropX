@@ -1,0 +1,53 @@
+
+fastq_location:
+#Every entry is one set of directories of fastq files with following orders:
+#- [Biological Reads, Cell Barcode part 1, Cell Barcode part 2 and UMI, Library Index]
+#If the reads are separated into 4 lanes, it would be:
+#- [L001_R1.fastq.gz, L001_R2.fastq.gz, L001_R4.fastq.gz, L001_R3.fastq.gz]
+#- [L002_R1.fastq.gz, L002_R2.fastq.gz, L002_R4.fastq.gz, L002_R3.fastq.gz]
+#- [L003_R1.fastq.gz, L003_R2.fastq.gz, L003_R4.fastq.gz, L003_R3.fastq.gz]
+#- [L004_R1.fastq.gz, L004_R2.fastq.gz, L004_R4.fastq.gz, L004_R3.fastq.gz]
+#Real world example in this file is obtained from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117498.
+#All the fastq files are retrieved from GEO using fastq-dump --split-files --gzip [sra accession number].
+#The fastq files are put into a folder created in the same directory as the InDropX.py and everything else.
+  - ['GSE117498/SRR7665185_1.fastq.gz','GSE117498/SRR7665185_2.fastq.gz', 'GSE117498/SRR7665185_4.fastq.gz', 'GSE117498/SRR7665185_3.fastq.gz']
+  - ['GSE117498/SRR7665186_1.fastq.gz','GSE117498/SRR7665186_2.fastq.gz', 'GSE117498/SRR7665186_4.fastq.gz', 'GSE117498/SRR7665186_3.fastq.gz']
+  - ['GSE117498/SRR7665187_1.fastq.gz','GSE117498/SRR7665187_2.fastq.gz', 'GSE117498/SRR7665187_4.fastq.gz', 'GSE117498/SRR7665187_3.fastq.gz']
+  - ['GSE117498/SRR7665188_1.fastq.gz','GSE117498/SRR7665188_2.fastq.gz', 'GSE117498/SRR7665188_4.fastq.gz', 'GSE117498/SRR7665188_3.fastq.gz']
+  - ['GSE117498/SRR7665189_1.fastq.gz','GSE117498/SRR7665189_2.fastq.gz', 'GSE117498/SRR7665189_4.fastq.gz', 'GSE117498/SRR7665189_3.fastq.gz']
+  - ['GSE117498/SRR7665190_1.fastq.gz','GSE117498/SRR7665190_2.fastq.gz', 'GSE117498/SRR7665190_4.fastq.gz', 'GSE117498/SRR7665190_3.fastq.gz']
+  - ['GSE117498/SRR7665191_1.fastq.gz','GSE117498/SRR7665191_2.fastq.gz', 'GSE117498/SRR7665191_4.fastq.gz', 'GSE117498/SRR7665191_3.fastq.gz']
+  - ['GSE117498/SRR7665192_1.fastq.gz','GSE117498/SRR7665192_2.fastq.gz', 'GSE117498/SRR7665192_4.fastq.gz', 'GSE117498/SRR7665192_3.fastq.gz']
+  - ['GSE117498/SRR7665193_1.fastq.gz','GSE117498/SRR7665193_2.fastq.gz', 'GSE117498/SRR7665193_4.fastq.gz', 'GSE117498/SRR7665193_3.fastq.gz']
+  - ['GSE117498/SRR7665194_1.fastq.gz','GSE117498/SRR7665194_2.fastq.gz', 'GSE117498/SRR7665194_4.fastq.gz', 'GSE117498/SRR7665194_3.fastq.gz']
+  - ['GSE117498/SRR7665195_1.fastq.gz','GSE117498/SRR7665195_2.fastq.gz', 'GSE117498/SRR7665195_4.fastq.gz', 'GSE117498/SRR7665195_3.fastq.gz']
+  - ['GSE117498/SRR7665196_1.fastq.gz','GSE117498/SRR7665196_2.fastq.gz', 'GSE117498/SRR7665196_4.fastq.gz', 'GSE117498/SRR7665196_3.fastq.gz']
+  - ['GSE117498/SRR7665197_1.fastq.gz','GSE117498/SRR7665197_2.fastq.gz', 'GSE117498/SRR7665197_4.fastq.gz', 'GSE117498/SRR7665197_3.fastq.gz']
+  - ['GSE117498/SRR7665198_1.fastq.gz','GSE117498/SRR7665198_2.fastq.gz', 'GSE117498/SRR7665198_4.fastq.gz', 'GSE117498/SRR7665198_3.fastq.gz']
+  - ['GSE117498/SRR7665199_1.fastq.gz','GSE117498/SRR7665199_2.fastq.gz', 'GSE117498/SRR7665199_4.fastq.gz', 'GSE117498/SRR7665199_3.fastq.gz']
+
+
+Library_Index:
+  #The entry should be one dictionary with at least one key:value.
+  #Key is the name of the sample and Value is the 8 BP long library index sequence.
+  #Real world example in this file is obtained from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117498.
+  #FastQC is used to confirm the 8BP long library index sequence for every sample.
+  {HSC: TACTCCTT,
+  MPP: ATTAGACG,
+  MLP: CTTAATAG,
+  PreBandNK: ATAGCCTT,
+  MEP: AGCTAGAA,
+  CMP: CGGAGAGA,
+  GMP: TCTTACGC,
+  LinNegCD34PosCD164Pos_1: TAAGGCTC,
+  LinNegCD34PosCD164Pos_2: TCGCATAA,
+  LinNegCD34PosCD164Pos_3: GAGACGGA,
+  LinNegCD34NegCD164high_1: TTACCTCC,
+  LinNegCD34NegCD164high_2: CAGTTATG,
+  LinNegCD34lowCD164high_1: CTTAATAG,
+  LinNegCD34lowCD164high_2: ATAGCCTT,
+  LinNegCD34NegCD164low: CCTTTACT
+  }
+
+output_directory:
+  Output/
