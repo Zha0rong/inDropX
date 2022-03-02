@@ -46,14 +46,14 @@ The output of the pipeline will be:
 The pipeline is designed to anneal the two-parts cell barcodes and UMI together so it can be analyzed using [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) or [kallistobus](https://www.kallistobus.tools).
 An example of [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) analysis command I use for the filtered results are the following:
 > STAR --soloType Droplet --outSAMtype BAM SortedByCoordinate \ # sort the bam by coordinates for pipeline such as velocyto
-       --soloFeatures Gene GeneFull SJ\ Output quantification results for exon-only, Full Gene and Splice Junction
-       --outSAMattributes NH HI AS nM CR CY UR UY CB UB \ # tag the bam using 10X compatible tag such as CY, CR, UY, UR, CB and UB 
-       --runThreadN $numberofthread --twopassMode Basic --sjdbGTFfile $gtf_location \
-       --genomeDir $reference_genome_location --soloUMIlen 6 \
-       --soloCBwhitelist whitelist.txt --soloCBmatchWLtype Exact \ #whitelist.txt can be obtained from whitelist/ folder in the git repository
-       --soloUMIdedup Exact --readFilesCommand zcat \ # The UMI is only 6 bp long, use Exact should work fine.
-       --soloUMIfiltering MultiGeneUMI --outFileNamePrefix $SampleName/$SampleName. \
-       --readFilesIn $SampleName.filtered.read.fastq.gz $SampleName.filtered.barcodes.umi.fastq.gz
+>      --soloFeatures Gene GeneFull SJ\ Output quantification results for exon-only, Full Gene and Splice Junction
+>      --outSAMattributes NH HI AS nM CR CY UR UY CB UB \ # tag the bam using 10X compatible tag such as CY, CR, UY, UR, CB and UB 
+>      --runThreadN $numberofthread --twopassMode Basic --sjdbGTFfile $gtf_location \
+>      --genomeDir $reference_genome_location --soloUMIlen 6 \
+>      --soloCBwhitelist whitelist.txt --soloCBmatchWLtype Exact \ #whitelist.txt can be obtained from whitelist/ folder in the git repository
+>      --soloUMIdedup Exact --readFilesCommand zcat \ # The UMI is only 6 bp long, use Exact should work fine.
+>      --soloUMIfiltering MultiGeneUMI --outFileNamePrefix $SampleName/$SampleName. \
+>      --readFilesIn $SampleName.filtered.read.fastq.gz $SampleName.filtered.barcodes.umi.fastq.gz
 
 As for kallisto+bustools, tutorial coming soon.
 
