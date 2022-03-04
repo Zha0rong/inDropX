@@ -94,8 +94,7 @@ class inDrop_Data_processing:
         except Exception as e:
             print(str(e))
 
-    def Demultiplexing_and_Correcting(self, strict=False,processor_to_use=2):
-        self.process_to_use=processor_to_use
+    def Demultiplexing_and_Correcting(self, strict=False):
         self.strict=strict
         Total_Read = 0
         self.Total_Read=Total_Read
