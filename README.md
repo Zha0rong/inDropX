@@ -10,9 +10,21 @@ It can demultiplex samples from the 4 ["Undetermined" fastq files from bcl2fastq
 Make sure Python is up and running in the system.
 Install [PYYAML](https://pyyaml.org)
 Specify location of fastq files, 8 base pairs long library index and output directory in the .yaml file.
-Run python inDropX.py inDropX.parameters.yaml
-The inDropX.parameters.yaml is the directory of inDropX.parameters.yaml, so if the supercomplicated.parameters.yaml is stored in excessively/sophisticated/directory, the command would be 
+Run:
+```
+
+python inDropX.py inDropX.parameters.yaml
+
+```
+
+
+The inDropX.parameters.yaml is the directory of inDropX.parameters.yaml, so if the supercomplicated.parameters.yaml is stored in excessively/sophisticated/directory, the command would be:
+
+```
+
 python inDropX.py excessively/sophisticated/directory/supercomplicated.parameters.yaml
+
+```
 
 ### How do I specify location of fastq files, 8 base pairs long library index and output directory in the yaml file.
 In the .yaml file three fields are required:
@@ -45,23 +57,19 @@ The output of the pipeline will be:
 
 The pipeline is designed to anneal the two-parts cell barcodes and UMI together so it can be analyzed using [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) or [kallistobus](https://www.kallistobus.tools).
 An example of [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) analysis command I use for the filtered results are the following:
->STAR --soloType Droplet --outSAMtype BAM SortedByCoordinate \ # sort the bam by coordinates for pipeline such as velocyto
->
->--soloFeatures Gene GeneFull SJ\ Output quantification results for exon-only, Full Gene and Splice Junction
->
->--outSAMattributes NH HI AS nM CR CY UR UY CB UB \ # tag the bam using 10X compatible tag such as CY, CR, UY, UR, CB and UB 
->
->--runThreadN $numberofthread --twopassMode Basic --sjdbGTFfile $gtf_location \
->
-> --genomeDir $reference_genome_location --soloUMIlen 6 \
->
->--soloCBwhitelist whitelist.txt --soloCBmatchWLtype Exact \ #whitelist.txt can be obtained from whitelist/ folder in the git repository
->
->--soloUMIdedup Exact --readFilesCommand zcat \ # The UMI is only 6 bp long, use Exact should work fine.
->
->--soloUMIfiltering MultiGeneUMI --outFileNamePrefix $SampleName/$SampleName. \
->
->--readFilesIn $SampleName.filtered.read.fastq.gz $SampleName.filtered.barcodes.umi.fastq.gz
+```
+STAR --soloType Droplet --outSAMtype BAM SortedByCoordinate \ # sort the bam by coordinates for pipeline such as velocyto
+--soloFeatures Gene GeneFull SJ\ # Output quantification results for exon-only, Full Gene and Splice Junction
+--outSAMattributes NH HI AS nM CR CY UR UY CB UB \ # tag the bam using 10X compatible tag such as CY, CR, UY, UR, CB and UB 
+--runThreadN $numberofthread --twopassMode Basic --sjdbGTFfile $gtf_location \
+--genomeDir $reference_genome_location --soloUMIlen 6 \
+--soloCBwhitelist whitelist.txt --soloCBmatchWLtype Exact \ #whitelist.txt can be obtained from whitelist/ folder in the git repository
+--soloUMIdedup Exact --readFilesCommand zcat \ # The UMI is only 6 bp long, use Exact should work fine.
+--soloUMIfiltering MultiGeneUMI --outFileNamePrefix $SampleName/$SampleName. \
+--readFilesIn $SampleName.filtered.read.fastq.gz $SampleName.filtered.barcodes.umi.fastq.gz
+
+```
+
 
 As for kallisto+bustools, tutorial coming soon.
 
