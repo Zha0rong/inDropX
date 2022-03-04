@@ -4,4 +4,5 @@
 .DS_Store
 .idea/InDropX.iml
 .idea/misc.xml
+.idea
 __pycache__/utils.cpython-39.pyc
