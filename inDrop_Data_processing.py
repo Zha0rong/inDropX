@@ -2,6 +2,7 @@ import csv
 import os
 from utils import *
 import yaml
+import multiprocessing
 
 class inDrop_Data_processing:
     pathtolibraryindex = ''
@@ -23,8 +24,8 @@ class inDrop_Data_processing:
     Invalid_Library_Index = 0
     Read_statistics = {}
     dictionary_for_fast_index_sample_search = {}
-
-
+    strict=False
+    process_to_use=2
 
     def __init__(self, pathtolibraryindex, pathtocellbarcode1, pathtocellbarcode2umi, pathtorna, libraryindex,
                  outputdir,version = 'V3',post_trimming_length=20):
@@ -93,7 +94,7 @@ class inDrop_Data_processing:
         except Exception as e:
             print(str(e))
 
-    def Read_assigning_and_filtering(self,list_of_fastq,strict=False):
+    def Read_assigning_and_filtering(self,list_of_fastq):
         for read in ParseFastq(list_of_fastq):
             name = read[0].strip('\n')
             librarybarcode = read[1][0].strip('\n')
@@ -157,7 +158,7 @@ class inDrop_Data_processing:
                 else:
                     self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'] += 1
             else:
-                if strict is False:
+                if self.strict is False:
                     if min([hammingdistance(librarybarcode, libraryindex) for libraryindex in
                             self.dictionary_for_fast_index_sample_search]) == 1:
                         correct_barcode = [libraryindex for libraryindex in self.dictionary_for_fast_index_sample_search if
@@ -229,7 +230,9 @@ class inDrop_Data_processing:
 
 
 
-    def Demultiplexing_and_Correcting(self, strict=False):
+    def Demultiplexing_and_Correcting(self, strict=False,processor_to_use=2):
+        self.process_to_use=processor_to_use
+        self.strict=strict
         Total_Read = 0
         self.Total_Read=Total_Read
         Invalid_Library_Index = 0
@@ -242,132 +245,129 @@ class inDrop_Data_processing:
         for sample in self.libraryindex.keys():
             dictionary_for_fast_index_sample_search[self.libraryindex[sample]] = sample
         self.dictionary_for_fast_index_sample_search=dictionary_for_fast_index_sample_search
+        pool_list=[]
         for i in range(len(self.pathtolibraryindex)):
-            for read in ParseFastq([[self.pathtolibraryindex[i], self.pathtocellbarcode1[i], self.pathtocellbarcode2umi[i],self.pathtorna[i]]]):
-                name = read[0].strip('\n')
-                librarybarcode = read[1][0].strip('\n')
-                CB1read = read[1][1].strip('\n')
-                CB2read = read[1][2].strip('\n')
-                rnaread = read[1][3].strip('\n')
-                CB1_qual = read[2][1].strip('\n')
-                CB2_qual = read[2][2].strip('\n')
-                rnaread_qual = read[2][3].strip('\n')
-                informative_name = '%s %s:%s:%s' % (name, CB1read, CB2read[0:8], CB2read[8:])
-                if str(librarybarcode) in dictionary_for_fast_index_sample_search:
-                    Total_Read += 1
-                    sample = dictionary_for_fast_index_sample_search[str(librarybarcode)]
-                    Read_statistics[sample] += 1
-                    write_fastq(self.output_central[sample]['Unfiltered_CB1'],informative_name,  CB1read,CB1_qual)
-                    write_fastq(self.output_central[sample]['Unfiltered_CB2'],informative_name,  CB1read,CB2_qual)
-                    write_fastq(self.output_central[sample]['Unfiltered_RNA'],informative_name,  rnaread,rnaread_qual)
-                    '''Insert Correcting and Filtering here'''
-                    self.output_central[sample]['Filtering.Statistics']['Total_read'] += 1
-                    UMI = CB2read[8:]
-                    trimmed_RNA = Trimmer(rnaread, rnaread_qual, min_length=self.post_trimming_length)
-                    if trimmed_RNA[2] is True:
-                        if CB1read in self.Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in self.Barcode_correction_dict:
-                            writeCB1 = self.Barcode_correction_dict[CB1read]
-                            writeCB2 = reverse_compliment(self.Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                            writename = ''
-                            if name.startswith('@'):
-                                writename = '%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
-                            else:
-                                writename = '@%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
-                            truecellname = writeCB1 + writeCB2
+            pool_list.append([[self.pathtolibraryindex[i], self.pathtocellbarcode1[i], self.pathtocellbarcode2umi[i],self.pathtorna[i]]])
+        pool = multiprocessing.Pool(processes=self.process_to_use)
+        result_list = pool.map(self.Read_assigning_and_filtering,pool_list)
+        #for i in range(len(self.pathtolibraryindex)):
+        #    for read in ParseFastq([[self.pathtolibraryindex[i], self.pathtocellbarcode1[i], self.pathtocellbarcode2umi[i],self.pathtorna[i]]]):
+        #        name = read[0].strip('\n')
+        #        librarybarcode = read[1][0].strip('\n')
+        #        CB1read = read[1][1].strip('\n')
+        #        CB2read = read[1][2].strip('\n')
+        #        rnaread = read[1][3].strip('\n')
+        #        CB1_qual = read[2][1].strip('\n')
+        #        CB2_qual = read[2][2].strip('\n')
+        #        rnaread_qual = read[2][3].strip('\n')
+        #        informative_name = '%s %s:%s:%s' % (name, CB1read, CB2read[0:8], CB2read[8:])
+        #        if str(librarybarcode) in dictionary_for_fast_index_sample_search:
+        #            Total_Read += 1
+        #            sample = dictionary_for_fast_index_sample_search[str(librarybarcode)]
+        #            Read_statistics[sample] += 1
+        #            write_fastq(self.output_central[sample]['Unfiltered_CB1'],informative_name,  CB1read,CB1_qual)
+        #            write_fastq(self.output_central[sample]['Unfiltered_CB2'],informative_name,  CB1read,CB2_qual)
+        #            write_fastq(self.output_central[sample]['Unfiltered_RNA'],informative_name,  rnaread,rnaread_qual)
+        #            '''Insert Correcting and Filtering here'''
+        #            self.output_central[sample]['Filtering.Statistics']['Total_read'] += 1
+        #            UMI = CB2read[8:]
+        #            trimmed_RNA = Trimmer(rnaread, rnaread_qual, min_length=self.post_trimming_length)
+        #            if trimmed_RNA[2] is True:
+        #                if CB1read in self.Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in self.Barcode_correction_dict:
+        #                    writeCB1 = self.Barcode_correction_dict[CB1read]
+        #                    writeCB2 = reverse_compliment(self.Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+        #                    writename = ''
+        #                    if name.startswith('@'):
+        #                        writename = '%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
+        #                    else:
+        #                        writename = '@%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
+        #                    truecellname = writeCB1 + writeCB2
+        #                    writeCB = writeCB1 + writeCB2 + UMI
+        #                    writeQual = CB1_qual + CB2_qual
+        #                    if truecellname in self.output_central[sample]['Cell.statistics']:
+        #                        if UMI not in self.output_central[sample]['Cell.statistics'][truecellname][0]:
+        #                            self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
+        #                            self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
+        #                            self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
+        #                        else:
+        #                            self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
+        #                    else:
+        #                        self.output_central[sample]['Cell.statistics'][truecellname] = [[], 0, 0]
+        #                        self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
+        #                        self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
+        #                        self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
+        #                    self.output_central[sample]['Filtering.Statistics']['Valid_read'] += 1
+        #                    write_fastq(self.output_central[sample]['Filtered_CB'], writename, writeCB, writeQual)
+        #                    write_fastq(self.output_central[sample]['Filtered_RNA'], writename, trimmed_RNA[0], trimmed_RNA[1])
+        #                else:
+        #                    if CB1read not in self.Barcode_correction_dict and reverse_compliment(
+        #                            CB2read[0:8]) not in self.Barcode_correction_dict:
+        #                        self.output_central[sample]['Filtering.Statistics']['Invalid_Both_CB'] += 1
+        #                    else:
+        #                        if CB1read not in self.Barcode_correction_dict:
+        #                            self.output_central[sample]['Filtering.Statistics']['Invalid_CB1'] += 1
+        #                        else:
+        #                            self.output_central[sample]['Filtering.Statistics']['Invalid_CB2'] += 1
+        #            else:
+        #                self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'] += 1
+        #        else:
+        #            if strict is False:
+        #                if min([hammingdistance(librarybarcode, libraryindex) for libraryindex in dictionary_for_fast_index_sample_search]) == 1:
+        #                    correct_barcode = [libraryindex for libraryindex in dictionary_for_fast_index_sample_search if hammingdistance(librarybarcode, libraryindex) == 1][0]
 
-                            writeCB = writeCB1 + writeCB2 + UMI
-                            writeQual = CB1_qual + CB2_qual
-                            if truecellname in self.output_central[sample]['Cell.statistics']:
-                                if UMI not in self.output_central[sample]['Cell.statistics'][truecellname][0]:
-                                    self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
-                                    self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
-                                    self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
-                                else:
-                                    self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
-                            else:
-                                self.output_central[sample]['Cell.statistics'][truecellname] = [[], 0, 0]
-                                self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
-                                self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
-                                self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
-                            self.output_central[sample]['Filtering.Statistics']['Valid_read'] += 1
-                            write_fastq(self.output_central[sample]['Filtered_CB'], writename, writeCB, writeQual)
-                            write_fastq(self.output_central[sample]['Filtered_RNA'], writename, trimmed_RNA[0], trimmed_RNA[1])
-                        else:
-                            if CB1read not in self.Barcode_correction_dict and reverse_compliment(
-                                    CB2read[0:8]) not in self.Barcode_correction_dict:
-                                self.output_central[sample]['Filtering.Statistics']['Invalid_Both_CB'] += 1
-                            else:
-                                if CB1read not in self.Barcode_correction_dict:
-                                    self.output_central[sample]['Filtering.Statistics']['Invalid_CB1'] += 1
-                                else:
-                                    self.output_central[sample]['Filtering.Statistics']['Invalid_CB2'] += 1
-                    else:
-                        self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'] += 1
-                else:
-                    if strict is False:
-                        if min([hammingdistance(librarybarcode, libraryindex) for libraryindex in dictionary_for_fast_index_sample_search]) == 1:
-                            correct_barcode = [libraryindex for libraryindex in dictionary_for_fast_index_sample_search if hammingdistance(librarybarcode, libraryindex) == 1][0]
-
-                            sample = dictionary_for_fast_index_sample_search[str(correct_barcode)]
-                            Total_Read += 1
-                            Read_statistics[sample] += 1
-                            write_fastq(self.output_central[sample]['Unfiltered_CB1'], informative_name, CB1read, CB1_qual)
-                            write_fastq(self.output_central[sample]['Unfiltered_CB2'], informative_name, CB1read, CB2_qual)
-                            write_fastq(self.output_central[sample]['Unfiltered_RNA'], informative_name, rnaread, rnaread_qual)
-                            '''Insert Correcting and Filtering here'''
-                            self.output_central[sample]['Filtering.Statistics']['Total_read'] += 1
-                            UMI = CB2read[8:]
-                            trimmed_RNA = Trimmer(rnaread, rnaread_qual, min_length=self.post_trimming_length)
-                            if trimmed_RNA[2] is True:
-                                if CB1read in self.Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in self.Barcode_correction_dict:
-                                    writeCB1 = self.Barcode_correction_dict[CB1read]
-                                    writeCB2 = reverse_compliment(self.Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
-                                    writename = ''
-                                    if name.startswith('@'):
-                                        writename = '%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
-                                    else:
-                                        writename = '@%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
-                                    truecellname = writeCB1 + writeCB2
-
-                                    writeCB = writeCB1 + writeCB2 + UMI
-                                    writeQual = CB1_qual + CB2_qual
-
-
-                                    if truecellname in self.output_central[sample]['Cell.statistics']:
-                                        if UMI not in self.output_central[sample]['Cell.statistics'][truecellname][0]:
-                                            self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
-                                            self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
-                                            self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
-                                        else:
-                                            self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
-                                    else:
-                                        self.output_central[sample]['Cell.statistics'][truecellname] = [[], 0, 0]
-                                        self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
-                                        self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
-                                        self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
-                                    self.output_central[sample]['Filtering.Statistics']['Valid_read'] += 1
-                                    write_fastq(self.output_central[sample]['Filtered_CB'], writename, writeCB,writeQual)
-                                    write_fastq(self.output_central[sample]['Filtered_RNA'], writename, trimmed_RNA[0],trimmed_RNA[1])
-                                else:
-                                    if CB1read not in self.Barcode_correction_dict and reverse_compliment(
-                                            CB2read[0:8]) not in self.Barcode_correction_dict:
-                                        self.output_central[sample]['Filtering.Statistics']['Invalid_Both_CB'] += 1
-                                    else:
-                                        if CB1read not in self.Barcode_correction_dict:
-                                            self.output_central[sample]['Filtering.Statistics']['Invalid_CB1'] += 1
-                                        else:
-                                            self.output_central[sample]['Filtering.Statistics']['Invalid_CB2'] += 1
-                            else:
-                                self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'] += 1
-
-
-
-                        else:
-                            Total_Read += 1
-                            Invalid_Library_Index += 1
-                    else:
-                        Total_Read += 1
-                        Invalid_Library_Index += 1
+        #                    sample = dictionary_for_fast_index_sample_search[str(correct_barcode)]
+        #                    Total_Read += 1
+        #                    Read_statistics[sample] += 1
+        #                    write_fastq(self.output_central[sample]['Unfiltered_CB1'], informative_name, CB1read, CB1_qual)
+        #                    write_fastq(self.output_central[sample]['Unfiltered_CB2'], informative_name, CB1read, CB2_qual)
+        #                    write_fastq(self.output_central[sample]['Unfiltered_RNA'], informative_name, rnaread, rnaread_qual)
+        #                    '''Insert Correcting and Filtering here'''
+        #                    self.output_central[sample]['Filtering.Statistics']['Total_read'] += 1
+        #                    UMI = CB2read[8:]
+        #                    trimmed_RNA = Trimmer(rnaread, rnaread_qual, min_length=self.post_trimming_length)
+        #                    if trimmed_RNA[2] is True:
+        #                        if CB1read in self.Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in self.Barcode_correction_dict:
+        #                            writeCB1 = self.Barcode_correction_dict[CB1read]
+        #                            writeCB2 = reverse_compliment(self.Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+        #                            writename = ''
+        #                            if name.startswith('@'):
+        #                                writename = '%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
+        #                            else:
+        #                                writename = '@%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
+        #                            truecellname = writeCB1 + writeCB2
+        #                            writeCB = writeCB1 + writeCB2 + UMI
+        #                            writeQual = CB1_qual + CB2_qual
+        #                            if truecellname in self.output_central[sample]['Cell.statistics']:
+        #                                if UMI not in self.output_central[sample]['Cell.statistics'][truecellname][0]:
+        #                                    self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
+        #                                    self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
+        #                                    self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
+        #                                else:
+        #                                    self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
+        #                            else:
+        #                                self.output_central[sample]['Cell.statistics'][truecellname] = [[], 0, 0]
+        #                                self.output_central[sample]['Cell.statistics'][truecellname][0].append(UMI)
+        #                                self.output_central[sample]['Cell.statistics'][truecellname][1] += 1
+        #                                self.output_central[sample]['Cell.statistics'][truecellname][2] += 1
+        #                            self.output_central[sample]['Filtering.Statistics']['Valid_read'] += 1
+        #                            write_fastq(self.output_central[sample]['Filtered_CB'], writename, writeCB,writeQual)
+        #                            write_fastq(self.output_central[sample]['Filtered_RNA'], writename, trimmed_RNA[0],trimmed_RNA[1])
+        #                        else:
+        #                            if CB1read not in self.Barcode_correction_dict and reverse_compliment(
+        #                                    CB2read[0:8]) not in self.Barcode_correction_dict:
+        #                                self.output_central[sample]['Filtering.Statistics']['Invalid_Both_CB'] += 1
+        #                            else:
+        #                                if CB1read not in self.Barcode_correction_dict:
+        #                                    self.output_central[sample]['Filtering.Statistics']['Invalid_CB1'] += 1
+        #                                else:
+        #                    else:
+        #                        self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'] += 1
+        #                else:
+        #                    Total_Read += 1
+        #                    Invalid_Library_Index += 1
+        #            else:
+        #                Total_Read += 1
+        #                Invalid_Library_Index += 1
         for sample in self.libraryindex.keys():
             self.output_central[sample]['Unfiltered_CB1'].close()
             self.output_central[sample]['Unfiltered_CB2'].close()
