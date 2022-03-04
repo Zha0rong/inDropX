@@ -257,6 +257,8 @@ class inDrop_Data_processing:
                                  self.output_central[sample]['Filtering.Statistics']['Invalid_CB2'] / self.output_central[sample]['Filtering.Statistics']['Total_read']])
                 writer.writerow(['Invalid_Both_CB', self.output_central[sample]['Filtering.Statistics']['Invalid_Both_CB'],
                                  self.output_central[sample]['Filtering.Statistics']['Invalid_Both_CB'] / self.output_central[sample]['Filtering.Statistics']['Total_read']])
+                writer.writerow(['Read_Too_Short_after_Trimming', self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'],
+                                 self.output_central[sample]['Filtering.Statistics']['Read_Too_Short_after_Trimming'] / self.output_central[sample]['Filtering.Statistics']['Total_read']])
             csvfile.close()
             with open(self.output_central[sample]['Cell.statistics.file'], "w", newline="") as csvfile:
                 writer = csv.writer(csvfile, delimiter='\t')
