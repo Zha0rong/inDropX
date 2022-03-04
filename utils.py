@@ -99,33 +99,37 @@ def Trimmer(seq, qual,min_length=20, number_of_polyA_allowed=5):
     seq = seq
     qual = qual
     keep_read = True
-    for base in seq[::-1]:
-        if base != 'A':
-            break
-        polyA_length += 1
-    Trim_position = len(seq) - max(polyA_length - number_of_polyA_allowed, 0)
-    if Trim_position < min_length:
-        keep_read = False
-        return [seq, qual, keep_read]
-
-    else:
+    adapter_detected = False
+    adapter_tested = 0
+    while adapter_tested <= (len(adapters) - 1) and adapter_detected is False and keep_read is True:
+        adapter = adapters[adapter_tested]
+        if adapter in seq:
+            adapter_detected = True
+            qual = qual[qual.find(adapter) + len(adapter):]
+            seq = seq[seq.find(adapter) + len(adapter):]
+            if len(seq) < min_length:
+                keep_read = False
+        else:
+            adapter_tested += 1
+    if keep_read:
+        for base in seq[::-1]:
+            if base != 'A':
+                break
+            polyA_length += 1
+        Trim_position = len(seq) - max(polyA_length - number_of_polyA_allowed, 0)
         seq = seq[:Trim_position]
         qual = qual[:Trim_position]
-    if keep_read == True:
-        adapter_detected=False
-        adapter_tested=0
-        while adapter_tested<=(len(adapters)-1) and adapter_detected is False:
-            adapter=adapters[adapter_tested]
-            if adapter in seq:
-                adapter_detected = True
-                qual = qual[seq.find(adapter) + len(adapter)::]
-                seq = seq[seq.find(adapter) + len(adapter)::]
-                if len(seq) < min_length:
-                    keep_read = False
-            else:
-                adapter_tested += 1
+        if Trim_position < min_length:
+            keep_read = False
+    if len(seq)==len(qual):
+        return [seq, qual, keep_read]
+    else:
+        print(seq)
+        print(qual)
+        sys.exit('trimming went wrong.')
 
-    return [seq, qual, keep_read]
+
+
 
 
 def ParseFastq(pathstofastqs):

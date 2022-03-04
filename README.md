@@ -55,24 +55,36 @@ The output of the pipeline will be:
 
 ## How should I utilize the filtered results?
 
+### Use STARsolo to align and quantify sample.
+
 The pipeline is designed to anneal the two-parts cell barcodes and UMI together so it can be analyzed using [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) or [kallistobus](https://www.kallistobus.tools).
 An example of [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) analysis command I use for the filtered results are the following:
 ```
-STAR --soloType Droplet --outSAMtype BAM SortedByCoordinate \ # sort the bam by coordinates for pipeline such as velocyto
---soloFeatures Gene GeneFull SJ\ # Output quantification results for exon-only, Full Gene and Splice Junction
---outSAMattributes NH HI AS nM CR CY UR UY CB UB \ # tag the bam using 10X compatible tag such as CY, CR, UY, UR, CB and UB 
+STAR --soloType Droplet --outSAMtype BAM SortedByCoordinate \
+--soloFeatures Gene GeneFull SJ\
+--outSAMattributes NH HI AS nM CR CY UR UY CB UB \
 --runThreadN $numberofthread --twopassMode Basic --sjdbGTFfile $gtf_location \
 --genomeDir $reference_genome_location --soloUMIlen 6 \
---soloCBwhitelist whitelist.txt --soloCBmatchWLtype Exact \ #whitelist.txt can be obtained from whitelist/ folder in the git repository
---soloUMIdedup Exact --readFilesCommand zcat \ # The UMI is only 6 bp long, use Exact should work fine.
+--soloCBwhitelist whitelist.txt --soloCBmatchWLtype Exact \
+--soloUMIdedup Exact --readFilesCommand zcat \
 --soloUMIfiltering MultiGeneUMI --outFileNamePrefix $SampleName/$SampleName. \
 --readFilesIn $SampleName.filtered.read.fastq.gz $SampleName.filtered.barcodes.umi.fastq.gz
-
 ```
 
+### Use kallisto and bustools to align and quantify sample.
 
-As for kallisto+bustools, tutorial coming soon.
+Kallisto and Bustools pipeline has been integrated together by the pipeline [kb](https://www.kallistobus.tools/kb_usage/kb_count/). 
 
+Just like STARsolo mentioned previously, this pipeline allows user to specify the location and property of Cell barcodes and UMI using -x ("technology"). In the description of Kallisto, it says:
+> Additionally kallisto bus will accept a string specifying a new technology in the format of bc:umi:seq where each of bc,umi and seq are a triplet of integers separated by a comma, 
+> denoting the file index, start and stop of the sequence used. 
+> For example to specify the 10xV2 technology we would use 0,0,16:0,16,26:1,0,0. 
+> The first part bc is 0,0,16 indicating it is in the 0-th file (also known as the first file in plain english), 
+> the barcode starts at the 0-th bp and ends at the 16-th bp in the sequence (i.e. 16bp barcode), 
+> the UMI is similarly in the same file, right after the barcode in position 16-26 (a 10bp UMI), 
+> finally the sequence is in a separate file, starts at 0 and ends at 0 (in this case stopping at 0 means there is no limit, we use the entire sequence).
+
+In the case of the filtered.
 
 
 

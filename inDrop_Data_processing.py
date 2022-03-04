@@ -19,6 +19,7 @@ class inDrop_Data_processing:
     Barcode_correction_dict = {}
     Demultiplexing_statistics=''
     post_trimming_length=20
+    dictionary_for_fast_index_sample_search=''
     def __init__(self, pathtolibraryindex, pathtocellbarcode1, pathtocellbarcode2umi, pathtorna, libraryindex,
                  outputdir,version = 'V3',post_trimming_length=20):
         try:
@@ -52,7 +53,9 @@ class inDrop_Data_processing:
 
                 # Check for the correct direction of library index.
                 for sample in list(self.libraryindex.keys()):
-                    os.mkdir('%s/%s'% (self.outputdir,sample))
+                    CHECK_FOLDER = os.path.isdir('%s/%s'% (self.outputdir,sample))
+                    if not CHECK_FOLDER:
+                        os.mkdir('%s/%s'% (self.outputdir,sample))
                     self.unfiltered_file_location[sample] = {
                         'RNA': '%s/%s_read.fastq.gz' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
                         'CB1': '%s/%s_barcode1.fastq.gz' % (
@@ -84,7 +87,21 @@ class inDrop_Data_processing:
         except Exception as e:
             print(str(e))
 
-    def Demultiplexing_and_Correcting(self, strict=True):
+    def Read_assigning_and_filtering(self,list_of_fastq,strict=False):
+        for read in ParseFastq(list_of_fastq):
+            name = read[0].strip('\n')
+            librarybarcode = read[1][0].strip('\n')
+            CB1read = read[1][1].strip('\n')
+            CB2read = read[1][2].strip('\n')
+            rnaread = read[1][3].strip('\n')
+            CB1_qual = read[2][1].strip('\n')
+            CB2_qual = read[2][2].strip('\n')
+            rnaread_qual = read[2][3].strip('\n')
+            informative_name = '%s %s:%s:%s' % (name, CB1read, CB2read[0:8], CB2read[8:])
+
+
+
+    def Demultiplexing_and_Correcting(self, strict=False):
         Total_Read = 0
         Invalid_Library_Index = 0
         Read_statistics = {}
@@ -93,6 +110,7 @@ class inDrop_Data_processing:
         dictionary_for_fast_index_sample_search = {}
         for sample in self.libraryindex.keys():
             dictionary_for_fast_index_sample_search[self.libraryindex[sample]] = sample
+        self.dictionary_for_fast_index_sample_search=dictionary_for_fast_index_sample_search
         for i in range(len(self.pathtolibraryindex)):
             for read in ParseFastq([[self.pathtolibraryindex[i], self.pathtocellbarcode1[i], self.pathtocellbarcode2umi[i],self.pathtorna[i]]]):
                 name = read[0].strip('\n')
@@ -256,11 +274,3 @@ class inDrop_Data_processing:
                 ['Reads not associated with any sample', Invalid_Library_Index, Invalid_Library_Index / Total_Read])
         csvfile.close()
 
-def yaml_processor(yaml_directory):
-    Results = {'pathtocellbarcode1':'',
-                            'pathtocellbarcode2umi':'',
-                            'pathtolibraryindex':'',
-                            'pathtorna':'',
-                            'libraryindex':''}
-
-    return Results
