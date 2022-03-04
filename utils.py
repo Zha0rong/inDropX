@@ -121,8 +121,10 @@ def Trimmer(seq, qual,min_length=20, number_of_polyA_allowed=5):
         qual = qual[:Trim_position]
         if Trim_position < min_length:
             keep_read = False
-    if len(seq)!=len(qual):
-        keep_read = False
+    if len(seq)!=len(qual) and keep_read is True:
+        print(seq)
+        print(qual)
+        sys.exit('read trimming went wrong')
 
     return [seq, qual, keep_read]
 
