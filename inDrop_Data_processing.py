@@ -26,11 +26,11 @@ class inDrop_Data_processing:
     dictionary_for_fast_index_sample_search = {}
     strict=False
     process_to_use=2
-
-    def __init__(self, pathtolibraryindex, pathtocellbarcode1, pathtocellbarcode2umi, pathtorna, libraryindex,
-                 outputdir,version = 'V3',post_trimming_length=20):
+    version=''
+    V2toV3conversion=''
+    def __init__(self, pathtolibraryindex=None, pathtocellbarcode1=None, pathtocellbarcode2umi=None, pathtorna=None, libraryindex=None,
+                 outputdir=None,version = 'V3',post_trimming_length=20):
         try:
-
             if type(libraryindex) is dict:
                 self.pathtolibraryindex = pathtolibraryindex
                 self.pathtocellbarcode1 = pathtocellbarcode1
@@ -48,47 +48,66 @@ class inDrop_Data_processing:
                             self.cellbarcodewhitelist.append(line.rstrip())
                     f.close()
                     self.Barcode_correction_dict = build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
+                    for sample in list(self.libraryindex.keys()):
+                        CHECK_FOLDER = os.path.isdir('%s/%s' % (self.outputdir, sample))
+                        if not CHECK_FOLDER:
+                            os.mkdir('%s/%s' % (self.outputdir, sample))
+                        self.output_central[sample] = {
+                            'Unfiltered_CB1': gzip.open('%s/%s/%s.barcode1.fastq.gz' % (self.outputdir, sample, sample),
+                                                        'wt'),
+                            'Unfiltered_CB2': gzip.open('%s/%s/%s.barcode2.fastq.gz' % (self.outputdir, sample, sample),
+                                                        'wt'),
+                            'Unfiltered_RNA': gzip.open('%s/%s/%s.read.fastq.gz' % (self.outputdir, sample, sample),
+                                                        'wt'),
+                            'Filtered_CB': gzip.open(
+                                '%s/%s/%s.filtered.barcodes.umi.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
+                            'Filtered_RNA': gzip.open(
+                                '%s/%s/%s.filtered.read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
+                            'Filtering.Statistics': {
+                                'Total_read': 0,
+                                'Valid_read': 0,
+                                'Invalid_CB1': 0,
+                                'Invalid_CB2': 0,
+                                'Invalid_Both_CB': 0,
+                                'Read_Too_Short_after_Trimming': 0},
+                            'Filtering.Statistics.file': '%s/%s/%s.filtering_statistics.tsv' % (
+                            self.outputdir, sample, sample),
+                            'Cell.statistics': {},
+                            'Cell.statistics.file': '%s/%s/%s.cell_statistics.tsv' % (self.outputdir, sample, sample),
+
+                        }
+
                 elif version == 'V2':
                     with open('whitelist/version_2.cell.barcode.txt') as f:
                         for line in f:
                             self.cellbarcodewhitelist.append(line.rstrip())
                     f.close()
                     self.Barcode_correction_dict = build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
+                    self.V2toV3conversion=''
+                    for sample in list(self.libraryindex.keys()):
+                        CHECK_FOLDER = os.path.isdir('%s/%s' % (self.outputdir, sample))
+                        if not CHECK_FOLDER:
+                            os.mkdir('%s/%s' % (self.outputdir, sample))
+                        self.output_central[sample] = {
+                            'Filtered_CB': gzip.open(
+                                '%s/%s/%s.filtered.barcodes.umi.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
+                            'Filtered_RNA': gzip.open(
+                                '%s/%s/%s.filtered.read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
+                            'Filtering.Statistics': {
+                                'Total_read': 0,
+                                'Valid_read': 0,
+                                'Invalid_CB1': 0,
+                                'Invalid_CB2': 0,
+                                'Invalid_Both_CB': 0,
+                                'Read_Too_Short_after_Trimming': 0},
+                            'Filtering.Statistics.file': '%s/%s/%s.filtering_statistics.tsv' % (
+                            self.outputdir, sample, sample),
+                            'Cell.statistics': {},
+                            'Cell.statistics.file': '%s/%s/%s.cell_statistics.tsv' % (self.outputdir, sample, sample),
+                        }
                 else:
                     sys.exit('The version information is not recognized, the input should either be \'V2\' or \'V3\'. For data generated by other protocols please contact author Zhaorong Li for support.')
-
-
                 # Check for the correct direction of library index.
-                for sample in list(self.libraryindex.keys()):
-                    CHECK_FOLDER = os.path.isdir('%s/%s'% (self.outputdir,sample))
-                    if not CHECK_FOLDER:
-                        os.mkdir('%s/%s'% (self.outputdir,sample))
-                    self.unfiltered_file_location[sample] = {
-                        'RNA': '%s/%s_read.fastq.gz' % (self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        'CB1': '%s/%s_barcode1.fastq.gz' % (
-                        self.outputdir, sample + '_' + str(self.libraryindex[sample])),
-                        'CB2': '%s/%s_barcode2.fastq.gz' % (
-                        self.outputdir, sample + '_' + str(self.libraryindex[sample]))}
-                    self.output_central[sample] = {
-                        'Unfiltered_CB1': gzip.open('%s/%s/%s.barcode1.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
-                        'Unfiltered_CB2': gzip.open('%s/%s/%s.barcode2.fastq.gz' % (self.outputdir,sample, sample), 'wt'),
-                        'Unfiltered_RNA': gzip.open('%s/%s/%s.read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
-                        'Filtered_CB': gzip.open('%s/%s/%s.filtered.barcodes.umi.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
-                        'Filtered_RNA': gzip.open('%s/%s/%s.filtered.read.fastq.gz' % (self.outputdir, sample, sample), 'wt'),
-                        'Filtering.Statistics': {
-                            'Total_read': 0,
-                            'Valid_read': 0,
-                            'Invalid_CB1': 0,
-                            'Invalid_CB2': 0,
-                            'Invalid_Both_CB': 0,
-                            'Read_Too_Short_after_Trimming': 0},
-                        'Filtering.Statistics.file': '%s/%s/%s.filtering_statistics.tsv'%(self.outputdir, sample, sample),
-                        'Cell.statistics': {},
-                        'Cell.statistics.file':  '%s/%s/%s.cell_statistics.tsv'%(self.outputdir, sample, sample),
-
-                    }
-                if type(pathtolibraryindex) is list:
-                    self.mutli_Lane = True
             else:
                 sys.exit('The library index needs to be a dictionary.')
         except Exception as e:
@@ -265,4 +284,6 @@ class inDrop_Data_processing:
             writer.writerow(
                 ['Reads not associated with any sample', Invalid_Library_Index, Invalid_Library_Index / Total_Read])
         csvfile.close()
+    def Correcting_V2(self):
+        return 0
 

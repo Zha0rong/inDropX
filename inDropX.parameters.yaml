@@ -1,6 +1,18 @@
-
+Version:
+  'V2'
 fastq_location:
-#Every entry is one set of directories of fastq files with following orders:
+#V2 Instruction:
+#Every entry is one set of directories of 2 fastq files with following orders:
+#- [Biological Reads, Cell Barcodes and UMI]
+#If the reads are separated into 4 lanes, it would be:
+#- [L001_R1.fastq.gz, L001_R2.fastq.gz]
+#- [L002_R1.fastq.gz, L002_R2.fastq.gz]
+#- [L003_R1.fastq.gz, L003_R2.fastq.gz]
+#- [L004_R1.fastq.gz, L004_R2.fastq.gz]
+  - ['~/embryo/SRA/SRR7061415_1.fastq.gz','~/embryo/SRA/SRR7061415_2.fastq.gz']
+
+#V3 Instruction:
+#Every entry is one set of directories of 4 fastq files with following orders:
 #- [Biological Reads, Cell Barcode part 1, Cell Barcode part 2 and UMI, Library Index]
 #If the reads are separated into 4 lanes, it would be:
 #- [L001_R1.fastq.gz, L001_R2.fastq.gz, L001_R4.fastq.gz, L001_R3.fastq.gz]
@@ -10,13 +22,13 @@ fastq_location:
 #Real world example in this file is obtained from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE117498.
 #All the fastq files are retrieved from GEO using fastq-dump --split-files --gzip [sra accession number].
 #The fastq files are put into a folder created in the same directory as the InDropX.py and everything else.
-  - ['GSE117498/SRR7665185_1.fastq.gz','GSE117498/SRR7665185_2.fastq.gz', 'GSE117498/SRR7665185_4.fastq.gz', 'GSE117498/SRR7665185_3.fastq.gz']
-  - ['GSE117498/SRR7665186_1.fastq.gz','GSE117498/SRR7665186_2.fastq.gz', 'GSE117498/SRR7665186_4.fastq.gz', 'GSE117498/SRR7665186_3.fastq.gz']
-  - ['GSE117498/SRR7665187_1.fastq.gz','GSE117498/SRR7665187_2.fastq.gz', 'GSE117498/SRR7665187_4.fastq.gz', 'GSE117498/SRR7665187_3.fastq.gz']
-  - ['GSE117498/SRR7665188_1.fastq.gz','GSE117498/SRR7665188_2.fastq.gz', 'GSE117498/SRR7665188_4.fastq.gz', 'GSE117498/SRR7665188_3.fastq.gz']
-  - ['GSE117498/SRR7665189_1.fastq.gz','GSE117498/SRR7665189_2.fastq.gz', 'GSE117498/SRR7665189_4.fastq.gz', 'GSE117498/SRR7665189_3.fastq.gz']
-  - ['GSE117498/SRR7665190_1.fastq.gz','GSE117498/SRR7665190_2.fastq.gz', 'GSE117498/SRR7665190_4.fastq.gz', 'GSE117498/SRR7665190_3.fastq.gz']
-  - ['GSE117498/SRR7665191_1.fastq.gz','GSE117498/SRR7665191_2.fastq.gz', 'GSE117498/SRR7665191_4.fastq.gz', 'GSE117498/SRR7665191_3.fastq.gz']
+  #- ['GSE117498/SRR7665185_1.fastq.gz','GSE117498/SRR7665185_2.fastq.gz', 'GSE117498/SRR7665185_4.fastq.gz', 'GSE117498/SRR7665185_3.fastq.gz']
+  #- ['GSE117498/SRR7665186_1.fastq.gz','GSE117498/SRR7665186_2.fastq.gz', 'GSE117498/SRR7665186_4.fastq.gz', 'GSE117498/SRR7665186_3.fastq.gz']
+  #- ['GSE117498/SRR7665187_1.fastq.gz','GSE117498/SRR7665187_2.fastq.gz', 'GSE117498/SRR7665187_4.fastq.gz', 'GSE117498/SRR7665187_3.fastq.gz']
+  #- ['GSE117498/SRR7665188_1.fastq.gz','GSE117498/SRR7665188_2.fastq.gz', 'GSE117498/SRR7665188_4.fastq.gz', 'GSE117498/SRR7665188_3.fastq.gz']
+  #- ['GSE117498/SRR7665189_1.fastq.gz','GSE117498/SRR7665189_2.fastq.gz', 'GSE117498/SRR7665189_4.fastq.gz', 'GSE117498/SRR7665189_3.fastq.gz']
+  #- ['GSE117498/SRR7665190_1.fastq.gz','GSE117498/SRR7665190_2.fastq.gz', 'GSE117498/SRR7665190_4.fastq.gz', 'GSE117498/SRR7665190_3.fastq.gz']
+  #- ['GSE117498/SRR7665191_1.fastq.gz','GSE117498/SRR7665191_2.fastq.gz', 'GSE117498/SRR7665191_4.fastq.gz', 'GSE117498/SRR7665191_3.fastq.gz']
   #- ['GSE117498/SRR7665192_1.fastq.gz','GSE117498/SRR7665192_2.fastq.gz', 'GSE117498/SRR7665192_4.fastq.gz', 'GSE117498/SRR7665192_3.fastq.gz']
   #- ['GSE117498/SRR7665193_1.fastq.gz','GSE117498/SRR7665193_2.fastq.gz', 'GSE117498/SRR7665193_4.fastq.gz', 'GSE117498/SRR7665193_3.fastq.gz']
   #- ['GSE117498/SRR7665194_1.fastq.gz','GSE117498/SRR7665194_2.fastq.gz', 'GSE117498/SRR7665194_4.fastq.gz', 'GSE117498/SRR7665194_3.fastq.gz']
@@ -27,6 +39,7 @@ fastq_location:
   #- ['GSE117498/SRR7665199_1.fastq.gz','GSE117498/SRR7665199_2.fastq.gz', 'GSE117498/SRR7665199_4.fastq.gz', 'GSE117498/SRR7665199_3.fastq.gz']
 
 
+
 Library_Index:
   #The entry should be one dictionary with at least one key:value.
   #Key is the name of the sample and Value is the 8 BP long library index sequence.
@@ -34,12 +47,12 @@ Library_Index:
   #FastQC is used to confirm the 8BP long library index sequence for every sample.
   {
   HSC: TACTCCTT,
-  MPP: ATTAGACG,
-  MLP: CTTAATAG,
-  PreBandNK: ATAGCCTT,
-  MEP: AGCTAGAA,
-  CMP: CGGAGAGA,
-  GMP: TCTTACGC,
+  #MPP: ATTAGACG,
+  #MLP: CTTAATAG,
+  #PreBandNK: ATAGCCTT,
+  #MEP: AGCTAGAA,
+  #CMP: CGGAGAGA,
+  #GMP: TCTTACGC,
   #LinNegCD34PosCD164Pos_1: TAAGGCTC,
   #LinNegCD34PosCD164Pos_2: TCGCATAA,
   #LinNegCD34PosCD164Pos_3: GAGACGGA,

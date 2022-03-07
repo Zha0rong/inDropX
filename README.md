@@ -60,7 +60,7 @@ The output of the pipeline will be:
 The pipeline is designed to anneal the two-parts cell barcodes and UMI together so it can be analyzed using [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) or [kallistobus](https://www.kallistobus.tools).
 An example of [STARsolo](https://github.com/alexdobin/STAR/blob/master/docs/STARsolo.md) analysis command I use for the filtered results are the following:
 ```
-STAR --soloType Droplet --outSAMtype BAM SortedByCoordinate \
+STAR --soloType CB_UMI_Simple --outSAMtype BAM SortedByCoordinate \
 --soloFeatures Gene GeneFull SJ\
 --outSAMattributes NH HI AS nM CR CY UR UY CB UB \
 --runThreadN $numberofthread --twopassMode Basic --sjdbGTFfile $gtf_location \
@@ -84,7 +84,11 @@ Just like STARsolo mentioned previously, this pipeline allows user to specify th
 > the UMI is similarly in the same file, right after the barcode in position 16-26 (a 10bp UMI), 
 > finally the sequence is in a separate file, starts at 0 and ends at 0 (in this case stopping at 0 means there is no limit, we use the entire sequence).
 
-In the case of the filtered.
+In the case of the filtered fastq for inDrop, the argument for kallisto -x should be:
 
+```
+-x 0,0,16:0,16,22:1,0,0
+```
+which means the first 16 bases of the reads in first fastq file is the cell barcodes, the 8 bases after the cell barcodes are the UMI and the whole sequence in the second fastq file is the biological reads.
 
 
