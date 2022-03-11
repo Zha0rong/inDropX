@@ -3,6 +3,7 @@ import os
 from utils import *
 import yaml
 import multiprocessing
+import time
 
 class inDrop_Data_processing:
     pathtolibraryindex = ''
@@ -28,6 +29,9 @@ class inDrop_Data_processing:
     process_to_use=2
     version=''
     V2toV3conversion=''
+    W1='AAGGCGTCACAAGCAATCACT'
+    rev_W1=reverse_compliment(W1)
+    segregation_point=1000000
     def __init__(self, pathtolibraryindex=None, pathtocellbarcode1=None, pathtocellbarcode2umi=None, pathtorna=None, libraryindex=None,
                  outputdir=None,version = 'V3',post_trimming_length=20):
         try:
@@ -82,7 +86,12 @@ class inDrop_Data_processing:
                             self.cellbarcodewhitelist.append(line.rstrip())
                     f.close()
                     self.Barcode_correction_dict = build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
-                    self.V2toV3conversion=''
+                    self.V2toV3conversion={}
+                    with open('whitelist/V2.to.V3.Conversion.Table.tsv') as f:
+                        for line in f:
+                            split = line.split('\t')
+                            self.V2toV3conversion[split[0].strip('\n')] = split[1].strip('\n')
+
                     for sample in list(self.libraryindex.keys()):
                         CHECK_FOLDER = os.path.isdir('%s/%s' % (self.outputdir, sample))
                         if not CHECK_FOLDER:
@@ -126,6 +135,8 @@ class inDrop_Data_processing:
             dictionary_for_fast_index_sample_search[self.libraryindex[sample]] = sample
         self.dictionary_for_fast_index_sample_search=dictionary_for_fast_index_sample_search
         for i in range(len(self.pathtolibraryindex)):
+            read_processed=0
+            time_period_start=time.time()
             for read in ParseFastq([[self.pathtolibraryindex[i], self.pathtocellbarcode1[i], self.pathtocellbarcode2umi[i],self.pathtorna[i]]]):
                 name = read[0].strip('\n')
                 librarybarcode = read[1][0].strip('\n')
@@ -244,6 +255,12 @@ class inDrop_Data_processing:
                     else:
                         Total_Read += 1
                         Invalid_Library_Index += 1
+                read_processed +=1
+                if read_processed != 0 and read_processed%self.segregation_point==0:
+                    print('Time take to finish %s reads: %s seconds'%(self.segregation_point,time.time()-time_period_start))
+                    time_period_start=time.time()
+
+
         for sample in self.libraryindex.keys():
             self.output_central[sample]['Unfiltered_CB1'].close()
             self.output_central[sample]['Unfiltered_CB2'].close()
