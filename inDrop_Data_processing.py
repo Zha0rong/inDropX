@@ -14,11 +14,14 @@ class inDrop_Data_processing:
     # Library index will be a dictionary with sample name as keys
     outputdir = ''
     cellbarcodewhitelist = []
+    cellbarcodewhitelist_rev = []
+
     file_location = {}  # Record the location of every file in every sample: CB1, CB2, Read
     unfiltered_file_location = {}
     sd = False
     output_central={}
     Barcode_correction_dict = {}
+    Barcode_correction_dict_rev = {}
     Demultiplexing_statistics=''
     post_trimming_length=20
     Total_Read = 0
@@ -50,8 +53,11 @@ class inDrop_Data_processing:
                     with open('whitelist/cellbarcode.txt') as f:
                         for line in f:
                             self.cellbarcodewhitelist.append(line.rstrip())
+                            self.cellbarcodewhitelist_rev.append(reverse_compliment(line.rstrip()))
                     f.close()
                     self.Barcode_correction_dict = build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist)
+                    self.Barcode_correction_dict_rev = build_barcode_neighborhoods(barcodelist=self.cellbarcodewhitelist_rev)
+
                     for sample in list(self.libraryindex.keys()):
                         CHECK_FOLDER = os.path.isdir('%s/%s' % (self.outputdir, sample))
                         if not CHECK_FOLDER:
@@ -159,9 +165,9 @@ class inDrop_Data_processing:
                     UMI = CB2read[8:]
                     trimmed_RNA = Trimmer(rnaread, rnaread_qual, min_length=self.post_trimming_length)
                     if trimmed_RNA[2] is True:
-                        if CB1read in self.Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in self.Barcode_correction_dict:
+                        if CB1read in self.Barcode_correction_dict and (CB2read[0:8]) in self.Barcode_correction_dict_rev:
                             writeCB1 = self.Barcode_correction_dict[CB1read]
-                            writeCB2 = reverse_compliment(self.Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+                            writeCB2 = (self.Barcode_correction_dict_rev[(CB2read[0:8])])
                             writename = ''
                             if name.startswith('@'):
                                 writename = '%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
@@ -212,9 +218,9 @@ class inDrop_Data_processing:
                             UMI = CB2read[8:]
                             trimmed_RNA = Trimmer(rnaread, rnaread_qual, min_length=self.post_trimming_length)
                             if trimmed_RNA[2] is True:
-                                if CB1read in self.Barcode_correction_dict and reverse_compliment(CB2read[0:8]) in self.Barcode_correction_dict:
+                                if CB1read in self.Barcode_correction_dict and (CB2read[0:8]) in self.Barcode_correction_dict_rev:
                                     writeCB1 = self.Barcode_correction_dict[CB1read]
-                                    writeCB2 = reverse_compliment(self.Barcode_correction_dict[reverse_compliment(CB2read[0:8])])
+                                    writeCB2 = (self.Barcode_correction_dict_rev[(CB2read[0:8])])
                                     writename = ''
                                     if name.startswith('@'):
                                         writename = '%s %s:%s:%s' % (name.split(' ')[0], writeCB1, writeCB2, UMI)
@@ -239,8 +245,7 @@ class inDrop_Data_processing:
                                     write_fastq(self.output_central[sample]['Filtered_CB'], writename, writeCB,writeQual)
                                     write_fastq(self.output_central[sample]['Filtered_RNA'], writename, trimmed_RNA[0],trimmed_RNA[1])
                                 else:
-                                    if CB1read not in self.Barcode_correction_dict and reverse_compliment(
-                                            CB2read[0:8]) not in self.Barcode_correction_dict:
+                                    if CB1read not in self.Barcode_correction_dict and (CB2read[0:8]) not in self.Barcode_correction_dict_rev:
                                         self.output_central[sample]['Filtering.Statistics']['Invalid_Both_CB'] += 1
                                     else:
                                         if CB1read not in self.Barcode_correction_dict:

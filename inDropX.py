@@ -73,6 +73,6 @@ if __name__ == '__main__':
                             pathtolibraryindex=[],
                             pathtorna=pathtorna,
                             libraryindex=parameters['Library_Index'], outputdir=parameters['output_directory'],version=parameters['Version'])
-        inDrop_Data_processor.Demultiplexing_and_Correcting()
+        #inDrop_Data_processor.Demultiplexing_and_Correcting()
 
 
