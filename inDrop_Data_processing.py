@@ -158,7 +158,7 @@ class inDrop_Data_processing:
                     sample = dictionary_for_fast_index_sample_search[str(librarybarcode)]
                     Read_statistics[sample] += 1
                     write_fastq(self.output_central[sample]['Unfiltered_CB1'],informative_name,  CB1read,CB1_qual)
-                    write_fastq(self.output_central[sample]['Unfiltered_CB2'],informative_name,  CB1read,CB2_qual)
+                    write_fastq(self.output_central[sample]['Unfiltered_CB2'],informative_name,  CB2read,CB2_qual)
                     write_fastq(self.output_central[sample]['Unfiltered_RNA'],informative_name,  rnaread,rnaread_qual)
                     '''Insert Correcting and Filtering here'''
                     self.output_central[sample]['Filtering.Statistics']['Total_read'] += 1
@@ -306,4 +306,3 @@ class inDrop_Data_processing:
         csvfile.close()
     def Correcting_V2(self):
         return 0
-
