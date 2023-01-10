@@ -64,7 +64,7 @@ STAR --soloType CB_UMI_Simple --outSAMtype BAM SortedByCoordinate \
 --soloFeatures Gene GeneFull SJ\
 --outSAMattributes NH HI AS nM CR CY UR UY CB UB \
 --runThreadN $numberofthread --twopassMode Basic --sjdbGTFfile $gtf_location \
---genomeDir $reference_genome_location --soloUMIlen 6 \
+--genomeDir $reference_genome_location --soloCBlen 16 --soloUMIlen 6 \
 --soloCBwhitelist whitelist.txt --soloCBmatchWLtype Exact \
 --soloUMIdedup Exact --readFilesCommand zcat \
 --soloUMIfiltering MultiGeneUMI --outFileNamePrefix $SampleName/$SampleName. \
